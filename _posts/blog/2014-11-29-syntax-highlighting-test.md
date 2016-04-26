@@ -1,5 +1,5 @@
 ---
-layout: article
+layout: post
 title: "Syntax Highlighting Test"
 modified:
 categories: blog
