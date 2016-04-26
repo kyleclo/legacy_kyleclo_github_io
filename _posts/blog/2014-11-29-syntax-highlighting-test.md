@@ -2,7 +2,7 @@
 layout: article
 title: "Syntax Highlighting Test"
 modified:
-categories: articles
+categories: blog
 excerpt: "Demo post to test the various ways of using syntax highlighting."
 tags: []
 image:
