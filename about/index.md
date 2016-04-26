@@ -1,9 +1,9 @@
 ---
 layout: article
 title: "About"
-date: 2014-06-02T09:44:20-04:00
-modified: 2014-08-27T14:56:44-04:00
-excerpt: "This is the Skinny Bones about page."
+date: 2016-04-26T11:53:00-08:00
+modified: 2016-04-18T16:39:37-08:00
+excerpt: "This is the excerpt for the About page"
 image:
   feature:
   teaser:
@@ -12,4 +12,4 @@ share: false
 ads: false
 ---
 
-Blabla
+I am a Statistician / Data Scientist on the Research Team at [CDK Global](http://www.cdkglobal.com/insightcenter/digital-marketing) in Seattle. I graduated in June 2015 with a Master's degree in [Statistics from the University of Washington](https://www.stat.washington.edu/).  Before that, I was a Research Assistant at the [Institute of Mathematics at Academia Sinica](http://www.math.sinica.edu.tw/www/default_e.jsp) in Taipei.
