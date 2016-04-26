@@ -1,11 +1,11 @@
 # Site wide configuration
 
-title:
-description:
+title:  "Kyle Lo | Statistician"
+description:  "My personal site for thoughts on statistics and machine learning."
 logo: # 120x120 px default image used for Twitter summary card
 teaser: # 400x250 px default teaser image used in image archive grid
-locale: en
-url:
+locale: en_US
+url:  "//kyleclo.github.io"
 
 # Jekyll configuration
 
@@ -37,14 +37,17 @@ titlecase: true
 
 # Site owner
 owner:
-  name:
-  email:
+  name:  "Kyle Lo"
+  avatar: "bio-photo.jpg"
+  bio:  "I am a Statistician / Data Scientist on the Research Team at CDK Global in Seattle.  I graduated in June 2015 with a Master's degree in Statistics from the University of Washington."
+  location:  "Seattle, WA"
+  email:  "kyleclo@uw.edu"
+  linkedin:  "kylelo"
+  github:  "kyleclo"
   twitter:
   google:
     ad-client:
     ad-slot:
-  bio:
-  avatar: bio-photo.jpg # 160x160 px image for author byline
   disqus-shortname:
 
 
