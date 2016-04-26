@@ -2,7 +2,7 @@
 layout: article
 title: "About"
 date: 2016-04-26T11:53:00-08:00
-modified: 2016-04-18T16:39:37-08:00
+modified: 2016-04-26T11:53:00-08:00
 excerpt: "This is the excerpt for the About page"
 image:
   feature:
