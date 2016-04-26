@@ -1,6 +1,16 @@
 # Site navigation links
 
-- title:
-  url:
-  excerpt:
-  image:
+- title: Blog
+  url: /blog/
+  #excerpt: ""
+  #image: 400x250.gif
+
+- title: Projects
+  url: /projects/
+  #excerpt: ""
+  #image: 400x250.gif
+
+- title: About
+  url: /about/
+  #excerpt: ""
+  #image: 400x250.gif
