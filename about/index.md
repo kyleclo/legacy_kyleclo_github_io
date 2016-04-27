@@ -1,5 +1,5 @@
 ---
-layout: single
+layout: page
 title: "About"
 date: 2016-04-26T11:53:00-08:00
 modified: 2016-04-26T11:53:00-08:00
