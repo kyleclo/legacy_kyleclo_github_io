@@ -1,8 +1,8 @@
 ---
 layout: page
 title: "About"
-date: false
-modified: 
+date:
+modified:
 excerpt: "Kyle Lo is a Statistician / Data Scientist in Seattle."
 image:
   feature:
