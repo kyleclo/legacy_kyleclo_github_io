@@ -2,26 +2,25 @@
 layout: default
 ---
 
-<!-- Used for static pages like About, Projects, Terms, etc. -->
-
 <!--
-Relevant YAML front matter fields:
-  default layout:
-    - title
-    - author    (defaults to site.owner)
-    - excerpt   (meta-data only)
-    - tags      (meta-data only)
-  page layout:
-    - date
-    - modified
+  Relevant YAML front matter fields:
+    - date        (required!)
+    - modified    (required!)
     - image
       - feature
       - credit
-    - categories  (removed!)
+    - categories  (removed, since it means including author)
     - share
     - comments
     - ads
--->
+  Relevant Includes:
+    - image-credit.html
+    - breadcrumbs.html
+    - share-this.html
+    - comments.html
+    - advertising.html
+  -->
+
 
 <div id="main" role="main">
 	<article class="wrap" itemscope itemtype="http://schema.org/Article">
