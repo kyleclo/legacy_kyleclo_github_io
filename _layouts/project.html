@@ -2,8 +2,25 @@
 layout: default
 ---
 
+<!--
+  Relevant YAML front matter fields:
+    - date
+    - modified
+    - image
+      - feature
+      - credit
+    - share
+  Relevant Includes:
+    - image-credit.html
+    - breadcrumbs.html
+    - share-this.html
+  -->
+
+
 <div id="main" role="main">
 	<article class="wrap" itemscope itemtype="http://schema.org/Article">
+	  
+	  <!-- feature image -->
 		{% if page.image.feature %}
 		<div class="page-feature">
 			<div class="page-image">
@@ -12,23 +29,33 @@ layout: default
 			</div><!-- /.page-image -->
 		</div><!-- /.page-feature -->
 		{% endif %}
+		
+		<!-- breadcrumbs -->
 		{% include breadcrumbs.html %}
+		
+		<!-- title -->
 		<div class="page-title">
 			<h1>{{ page.title }}</h1>
 		</div>
+		
+		
 		<div class="inner-wrap">
 			<div id="content" class="page-content" itemprop="articleBody">
+			  
 				{{ content }}
-				<hr />
+				
+				<hr />  <!-- page break in XHTML -->
+				
 				<footer class="page-footer">
+				  <!-- share this on social media -->
 					{% if page.share != false %}{% include share-this.html %}{% endif %}
-					{% include page-meta.html %}
+					
+					<!-- adds "Updated: Date" if "date" is provided -->
+					{% if page.date %}{% include page-meta.html %}{% endif %}
 				</footer><!-- /.footer -->
-				<aside>
-					{% if page.comments == true %}{% include comments.html %}{% endif %}
-				</aside>
+				
 			</div><!-- /.content -->
 		</div><!-- /.inner-wrap -->
-		{% if page.ads == true %}<div class="ads">{% include advertising.html %}</div><!-- /.ads -->{% endif %}
-	</article><!-- /.wrap -->
+		
+	</article><!-- ./wrap -->
 </div><!-- /#main -->
