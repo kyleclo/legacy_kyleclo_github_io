@@ -12,8 +12,4 @@ share: false
 ads: false
 ---
 
-![image-left]({{ site.url }}/images/bio-photo.jpg){: .align-left} The rest of this paragraph is filler for the sake of seeing the text wrap around the 150×150 image, which is **left aligned**.
-
-<p>This is some text. <img src="{{ site.url}}/images/bio-photo.jpg" alt="Photo of Kyle" width="42" height="42" align="left">  This is some text.</p>
-
-I am a Statistician / Data Scientist on the Research Team at [CDK Global](http://www.cdkglobal.com/insightcenter/digital-marketing) in Seattle. I graduated in June 2015 with a Master's degree in [Statistics from the University of Washington](https://www.stat.washington.edu/).  Before that, I was a Research Assistant at the [Institute of Mathematics at Academia Sinica](http://www.math.sinica.edu.tw/www/default_e.jsp) in Taipei.
+<p> I am a Statistician / Data Scientist on the Research Team at [CDK Global](http://www.cdkglobal.com/insightcenter/digital-marketing) in Seattle. <img src="{{ site.url}}/images/bio-photo.jpg" alt="Photo of Kyle" width="100" height="100" align="left"> I graduated in June 2015 with a Master's degree in [Statistics from the University of Washington](https://www.stat.washington.edu/).  Before that, I was a Research Assistant at the [Institute of Mathematics at Academia Sinica](http://www.math.sinica.edu.tw/www/default_e.jsp) in Taipei. </p>
