@@ -59,8 +59,8 @@ layout: default
 				  <!-- share this on social media -->
 					{% if page.share != false %}{% include share-this.html %}{% endif %}
 					
-					<!-- adds "Updated: Date" if "date" or "modified" are provided -->
-					{% include page-meta.html %}
+					<!-- adds "Updated: Date" if "date" is provided -->
+					{% if page.date %}{% include page-meta.html %}{% endif %}
 				</footer><!-- /.footer -->
 				
 				<!-- comments -->
