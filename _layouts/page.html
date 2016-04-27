@@ -42,7 +42,7 @@ Relevant YAML front matter fields:
 			<h1>{{ page.title }}</h1>
 		</div>
 		
-		<!-- body -->
+		
 		<div class="inner-wrap">
 			<div id="content" class="page-content" itemprop="articleBody">
 			  
@@ -50,11 +50,12 @@ Relevant YAML front matter fields:
 				
 				<hr />  <!-- page break in XHTML -->
 				
-				<!-- footer -->
 				<footer class="page-footer">
-					<!-- {% if page.categories %}{% include page-author.html %}{% endif %} -->      <!-- author bio -->
-					{% if page.share != false %}{% include share-this.html %}{% endif %}    <!-- share this on social media -->
-					{% include page-meta.html %}    <!-- stores time meta-data if "date" and "modified" are specified in YAML front matter  -->
+				  <!-- share this on social media -->
+					{% if page.share != false %}{% include share-this.html %}{% endif %}
+					
+					<!-- stores time meta-data if "date" and "modified" are specified in YAML front matter  -->
+					{% include page-meta.html %}    
 				</footer><!-- /.footer -->
 				
 				<!-- comments -->
