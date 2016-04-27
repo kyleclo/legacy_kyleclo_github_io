@@ -12,4 +12,4 @@ share: false
 ads: false
 ---
 
-<img src="{{ site.url}}/images/bio-photo.jpg" alt="Photo of Kyle" width="100" height="100" align="left"> I am a Statistician / Data Scientist on the Research Team at [CDK Global](http://www.cdkglobal.com/insightcenter/digital-marketing) in Seattle. I graduated in June 2015 with a Master's degree in [Statistics from the University of Washington](https://www.stat.washington.edu/).  Before that, I was a Research Assistant at the [Institute of Mathematics at Academia Sinica](http://www.math.sinica.edu.tw/www/default_e.jsp) in Taipei.
+<img src="{{ site.url}}/images/bio-photo.jpg" alt="Photo of Kyle" width="150" height="150" align="left"> I am a Statistician / Data Scientist on the Research Team at [CDK Global](http://www.cdkglobal.com/insightcenter/digital-marketing) in Seattle. I graduated in June 2015 with a Master's degree in [Statistics from the University of Washington](https://www.stat.washington.edu/).  Before that, I was a Research Assistant at the [Institute of Mathematics at Academia Sinica](http://www.math.sinica.edu.tw/www/default_e.jsp) in Taipei.
