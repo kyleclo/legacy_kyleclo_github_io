@@ -1,17 +1,15 @@
 <!-- if "date" field is specified in YAML front matter -->
-{% if page.date %}
-  <div class="page-meta">
-	  <p>
-	    <!-- for multi-lingual site -->
-	    {{ site.data.messages.locales[site.locale].updated }}
-	    
-	    <!-- if "modified" field is specified in YAML front matter -->
-	    {% if page.modified %}
-	      <time datetime="{{ page.modified | date: "%Y-%m-%dT%H:%M:%SZ" }}" itemprop="dateModified"> {{ page.modified | date: "%B %d, %Y" }} </time>
-	    {% else %}
-	      <time datetime="{{ page.date | date: "%Y-%m-%dT%H:%M:%SZ" }}" itemprop="datePublished">{{ page.date | date: "%B %d, %Y" }} </time>
-	    {% endif %}
-	    
-	  </p>
-  </div><!-- /.page-meta -->
-{% endif %}
+<div class="page-meta">
+  <p>
+    <!-- for multi-lingual site -->
+    {{ site.data.messages.locales[site.locale].updated }}
+    
+    <!-- if "modified" field is specified in YAML front matter -->
+    {% if page.modified %}
+      <time datetime="{{ page.modified | date: "%Y-%m-%dT%H:%M:%SZ" }}" itemprop="dateModified"> {{ page.modified | date: "%B %d, %Y" }} </time>
+    {% else %}
+      <time datetime="{{ page.date | date: "%Y-%m-%dT%H:%M:%SZ" }}" itemprop="datePublished">{{ page.date | date: "%B %d, %Y" }} </time>
+    {% endif %}
+    
+  </p>
+</div><!-- /.page-meta -->
