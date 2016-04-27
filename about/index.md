@@ -5,7 +5,7 @@ date:
 modified:
 excerpt: "Kyle Lo is a Statistician / Data Scientist in Seattle."
 image:
-  feature: "bio-photo.jpg"
+  feature:
   teaser:
   thumb:
 tags: []
