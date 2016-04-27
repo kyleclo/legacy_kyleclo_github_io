@@ -2,8 +2,31 @@
 layout: default
 ---
 
+<!--
+  Relevant YAML front matter fields:
+    - date
+    - modified
+    - image
+      - feature
+      - credit
+    - categories
+    - share
+    - comments
+    - ads
+  Relevant Includes:
+    - image-credit.html
+    - breadcrumbs.html
+    - page-author.html
+    - share-this.html
+    - comments.html
+    - advertising.html
+  -->
+
+
 <div id="main" role="main">
 	<article class="wrap" itemscope itemtype="http://schema.org/Article">
+	  
+	  <!-- feature image -->
 		{% if page.image.feature %}
 		<div class="page-feature">
 			<div class="page-image">
@@ -12,24 +35,44 @@ layout: default
 			</div><!-- /.page-image -->
 		</div><!-- /.page-feature -->
 		{% endif %}
+		
+		<!-- breadcrumbs -->
 		{% include breadcrumbs.html %}
+		
+		<!-- title -->
 		<div class="page-title">
 			<h1>{{ page.title }}</h1>
 		</div>
+		
+		
 		<div class="inner-wrap">
 			<div id="content" class="page-content" itemprop="articleBody">
+			  
 				{{ content }}
-				<hr />
+				
+				<hr />  <!-- page break in XHTML -->
+				
 				<footer class="page-footer">
-					{% if page.categories %}{% include page-author.html %}{% endif %}
+				  <!-- include author info -->
+				  {% if page.categories %}{% include page-author.html %}{% endif %}
+				  
+				  <!-- share this on social media -->
 					{% if page.share != false %}{% include share-this.html %}{% endif %}
+					
+					<!-- adds "Updated: Date" if "date" or "modified" are provided -->
 					{% include page-meta.html %}
 				</footer><!-- /.footer -->
+				
+				<!-- comments -->
 				<aside>
 					{% if page.comments == true %}{% include comments.html %}{% endif %}
 				</aside>
+				
 			</div><!-- /.content -->
 		</div><!-- /.inner-wrap -->
+		
+		<!-- advertisements -->
 		{% if page.ads == true %}<div class="ads">{% include advertising.html %}</div><!-- /.ads -->{% endif %}
+		
 	</article><!-- ./wrap -->
 </div><!-- /#main -->
