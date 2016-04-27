@@ -3,12 +3,14 @@ layout: page
 title: "About"
 date: 2016-04-26T11:53:00-08:00
 modified: 2016-04-26T11:53:00-08:00
-excerpt: "This is the excerpt for the About page"
+excerpt: "Kyle Lo is a Statistician / Data Scientist in Seattle."
 image:
   feature:
   teaser:
   thumb:
+categories: false
 share: false
+comments: false
 ads: false
 ---
 
