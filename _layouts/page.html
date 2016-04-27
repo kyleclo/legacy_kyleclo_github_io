@@ -9,7 +9,6 @@ layout: default
     - image
       - feature
       - credit
-    - categories  (removed, since it means including author)
     - share
     - comments
     - ads
@@ -52,9 +51,6 @@ layout: default
 				<hr />  <!-- page break in XHTML -->
 				
 				<footer class="page-footer">
-				  <!-- include author info -->
-				  <!-- {% if page.categories %}{% include page-author.html %}{% endif %} -->
-				  
 				  <!-- share this on social media -->
 					{% if page.share != false %}{% include share-this.html %}{% endif %}
 					
