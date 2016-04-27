@@ -8,7 +8,7 @@ image:
   feature:
   teaser:
   thumb:
-categories: false
+categories:
 tags: []
 share: false
 comments: false
