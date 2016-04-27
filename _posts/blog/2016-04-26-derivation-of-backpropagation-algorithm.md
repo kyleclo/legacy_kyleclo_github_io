@@ -9,6 +9,7 @@ image:
   feature:
   teaser:
   thumb:
-date: 
+date: 2016-04-26T22:18:00-08:00
 ---
 
+Hi
