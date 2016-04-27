@@ -1,5 +1,10 @@
 # Site navigation links
 
+- title: Home
+  url: /
+  #excerpt: ""
+  #image: 400x250.gif
+
 - title: Blog
   url: /blog/
   #excerpt: ""
