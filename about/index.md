@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "About"
-date: 2016-04-26 12:57:00 -0700
+date: 2016-04-26T11:57:00-08:00
 modified: 
 excerpt: "Kyle Lo is a Statistician / Data Scientist in Seattle."
 image:
