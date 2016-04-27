@@ -1,6 +1,9 @@
+<!--  Doesn't seem like needs this because the default layout already contains this block of code. 
+      Hence, "author" variable would always have a value before reaching any if-statement that determines whether to include this file.
 {% if page.author %}
   {% assign author = site.data.authors[page.author] %}{% else %}{% assign author = site.owner %}
 {% endif %}
+-->
 
 <div class="author-image">
 	<img src="{{ site.url }}/images/{{ author.avatar }}" alt="{{ author.name }}">
