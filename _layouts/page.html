@@ -4,7 +4,7 @@ layout: default
 
 <!--
   Relevant YAML front matter fields:
-    - date        (required!)
+    - date
     - modified
     - image
       - feature
@@ -52,8 +52,13 @@ layout: default
 				<hr />  <!-- page break in XHTML -->
 				
 				<footer class="page-footer">
+				  <!-- include author info -->
+				  <!-- {% if page.categories %}{% include page-author.html %}{% endif %} -->
+				  
 				  <!-- share this on social media -->
 					{% if page.share != false %}{% include share-this.html %}{% endif %}
+					
+					<!-- adds "Updated: Date" if "date" or "modified" are provided -->
 					{% include page-meta.html %}
 				</footer><!-- /.footer -->
 				
