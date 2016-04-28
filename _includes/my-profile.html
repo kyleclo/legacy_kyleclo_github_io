@@ -1,0 +1,34 @@
+
+<div itemscope itemtype="http://schema.org/Person">
+
+  <div class="owner__avatar">
+    <img src="{{ site.url }}/images/{{ owner.avatar }}" class="owner__avatar" alt="{{ owner.name }}">
+  </div>
+
+  <div class="owner__urls-wrapper">
+    <button class="btn btn--inverse">Follow</button>
+    <ul class="owner__urls social-icons">
+      {% if owner.location %}
+        <li><i class="fa fa-fw fa-map-marker" aria-hidden="true"></i> {{ owner.location }}</li>
+      {% endif %}
+      {% if owner.email %}
+        <li><a href="mailto:{{ owner.email }}"><i class="fa fa-fw fa-envelope-square" aria-hidden="true"></i> {{ site.data.ui-text[site.locale].email_label }}</a></li>
+      {% endif %}
+      {% if owner.twitter %}
+        <li><a href="http://twitter.com/{{ owner.twitter }}"><i class="fa fa-fw fa-twitter-square" aria-hidden="true"></i> Twitter</a></li>
+      {% endif %}
+      {% if owner.facebook %}
+        <li><a href="http://facebook.com/{{ owner.facebook }}"><i class="fa fa-fw fa-facebook-square" aria-hidden="true"></i> Facebook</a></li>
+      {% endif %}
+      {% if owner.google_plus %}
+        <li><a href="http://plus.google.com/+{{ owner.google_plus }}"><i class="fa fa-fw fa-google-plus-square" aria-hidden="true"></i> Google+</a></li>
+      {% endif %}
+      {% if owner.linkedin %}
+        <li><a href="http://linkedin.com/in/{{ owner.linkedin }}"><i class="fa fa-fw fa-linkedin-square" aria-hidden="true"></i> LinkedIn</a></li>
+      {% endif %}
+      {% if owner.github %}
+        <li><a href="http://github.com/{{ owner.github }}"><i class="fa fa-fw fa-github" aria-hidden="true"></i> Github</a></li>
+      {% endif %}
+    </ul>
+  </div>
+</div>
