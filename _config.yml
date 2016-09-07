@@ -1,0 +1,32 @@
+# Dependencies
+markdown:         kramdown #redcarpet
+highlighter:      rouge #pygments
+
+# Permalinks
+permalink:        /:categories/:title/  #pretty
+
+# Setup
+title:            Kyle Lo
+tagline:          'Statistician | Data Scientist | Software Developer'
+description:      Statistics and stuff
+url:              
+baseurl:          / 
+
+author:
+  name:           'Kyle Lo'
+  avatar:         /images/bio.jpg
+  email:          kyleclo@uw.edu
+  github:         kyleclo
+  linkedin:       kylelo            
+
+paginate:         5
+
+# Custom vars
+version:          0.0.1
+
+# Gems
+gems: 
+  - jekyll-paginate
+  - jekyll-sitemap
+  - jekyll-gist
+  - jekyll-feed
