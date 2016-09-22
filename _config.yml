@@ -30,3 +30,6 @@ gems:
   - jekyll-sitemap
   - jekyll-gist
   - jekyll-feed
+
+# Excludes
+exclude: ['.gitignore', '.DS_Store', 'deploy-to-master.sh', 'Rakefile']
