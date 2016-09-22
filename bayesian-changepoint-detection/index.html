@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+  <head>
+  <!-- Mathjax -->
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+    });
+  </script>
+  <script type="text/javascript" async
+    src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+  </script>
+
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      Bayesian changepoint detection &middot; Kyle Lo
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/public/css/poole.css">
+  <link rel="stylesheet" href="/public/css/syntax.css">
+  <link rel="stylesheet" href="/public/css/hyde.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/icons/apple-icon-precomposed.png">
+  <link rel="shortcut icon" href="/images/icons/favicon.ico">
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
+</head>
+
+
+  <body>
+
+    <div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-image">
+      <img src="/images/bio.jpg" alt="Kyle Lo">
+    </div>
+    <div class="sidebar-about">
+    <h1>
+        <a href="/">
+          Kyle Lo
+        </a>
+    </h1>  
+    <p class="lead">Statistics and stuff</p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="sidebar-nav-item" href="/">Home</a>
+
+      
+
+      
+      
+        
+          
+        
+      
+        
+          
+            <a class="sidebar-nav-item" href="/about/">About</a>
+          
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+
+      <a class="sidebar-nav-item" href="https://github.com/solstat/snake_learning">deep-rf</a>
+    </nav>
+
+    <p>&copy; 2016. All rights reserved.</p>
+  </div>
+</div>
+
+
+    <div class="content container">
+      <div class="post">
+  <h1 class="post-title">Bayesian changepoint detection</h1>
+  <span class="post-date">16 Sep 2016</span>
+  <h2 id="definitions">Definitions</h2>
+<p>Let your time series data be a sequence of values $y_1,\dots,y_n$.</p>
+
+<p>We define a <strong>changepoint</strong> $\tau_j \in {1,\dots,n-1}$ to be a point in time such that the values in the resulting <strong>segment</strong> ${y_{\tau_{j-1}+1},\dots,y_{\tau_j}}$ are drawn iid from a distribution with parameter $\theta_j$.</p>
+
+<p>Suppose you have 100 values drawn from a Normal distribution:  The first 50 from $\mu_1$ and the latter 50 from $\mu_2$.  For simplicity, assume constant standard deviation $\sigma$. Then:</p>
+
+<ul>
+  <li>This time series has a single changepoint $\tau_1 = 50$</li>
+  <li>It has a corresponding segment ${y_1,\dots,y_{50}} \sim N(\mu_1,\sigma)$</li>
+  <li>The second segment ${y_{51},\dots,y_{100}} \sim N(\mu_2,\sigma)$</li>
+</ul>
+
+<p>Adjacent segments have different corresponding parameters, and changepoints represent the last timepoint in a segment preceding a shift in the underlying distribution of $y_i$’s.</p>
+
+<h2 id="some-things-to-note">Some things to note</h2>
+
+<ul>
+  <li>The number of changepoints $m \in {0,\dots,n-1}$.
+    <ul>
+      <li>Why $n-1$?  Well, if your dataset were only a single value, you can’t have any changepoints.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Changepoints have an ordering: $0 &lt; \tau_1 &lt; \dots &lt; \tau_m &lt; n$.</p>
+  </li>
+  <li>
+    <p>There are $m+1$ segments, each of which has its corresponding changepoint $\tau_j$ and parameter $\theta_j$.</p>
+  </li>
+  <li>Some notational formality:
+    <ul>
+      <li>The first segment is ${y_{\tau_0 + 1},\dots,y_{\tau_1}}$ where $\tau_0 \equiv 0$.</li>
+      <li>The final segment is ${y_{\tau_m},\dots,y_{\tau_{m+1}}}$ where $\tau_{m+1} \equiv n$.</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="priors">Priors</h2>
+
+<p>Since we’re being Bayesian here, let’s put priors on stuff.</p>
+
+<h4 id="number-of-changepoints">Number of changepoints</h4>
+
+<script type="math/tex; mode=display">m \sim \pi(m)</script>
+
+<h4 id="location-of-changepoints">Location of changepoints</h4>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\begin{align} \tau_1 &\sim \pi(\tau_1|m) \\
+\tau_2 &\sim \pi(\tau_2|\tau_1, m) \\
+&\vdots \\
+\tau_m &\sim \pi(\tau_m|\tau_{m-1},m)\end{align} %]]></script>
+
+<p>We assume that the location of the $j^{th}$ changepoint depends only on the previous changepoint; in other words, the sequence of changepoint locations has a <strong>Markov dependency structure</strong>: 
+<script type="math/tex">\pi(\tau_1,\dots,\tau_m|m) = \pi(\tau_1|m) \prod_{j=2}^{m} \pi(\tau_j|\tau_{j-1},m)</script></p>
+
+<p>An equivalent way of specifying this prior is by thinking of changepoints as being drawn from a <strong>point process</strong> specified by a probability mass function $g(t)$, where $t \in {1,2,\dots}$ is the amount of time <strong>between</strong> two successive changepoints.</p>
+
+<ul>
+  <li>For example, we can model changepoints as being generated through a Bernoulli process over ${1,\dots,n-1}$, meaning waiting times between successive changepoints are drawn a geometric distribution.</li>
+</ul>
+
+<p>Then the joint conditional probability of $m$ changepoints occurring at $\tau_1,\dots,\tau_m$ can be defined using $g(t)$:</p>
+
+<script type="math/tex; mode=display">\pi(\tau_1,\dots,\tau_m | m) = g(\tau_1) \left( \prod_{j=2}^m g(\tau_j - \tau_{j-1}) \right) \left( 1 - G(n - \tau_m) \right)</script>
+
+<p>where $G(t) = \sum_{j=1}^t g(t)$ is the cumulative distribution function.</p>
+
+<p>Interpretation:</p>
+
+<ul>
+  <li>The first term represents the probability that the first changepoint occurred at time $t$.</li>
+  <li>The second term represents the probability that successive changepoints took $(\tau_j - \tau_{j-1})$ amount of time after the previous changepoint.</li>
+  <li>The final term using 1 minus the c.d.f. represents the probability that a changepoint doesn’t occur after the last changepoint $\tau_m$.</li>
+</ul>
+
+<h4 id="parameters-for-each-segment">Parameters for each segment</h4>
+<p><script type="math/tex">\theta_j \sim \pi(\theta_j)</script>
+We assume the $\theta_1,\dots,\theta_{m+1}$ are independent from each other.</p>
+
+
+</div>
+
+
+<div class="related">
+  <h2>Related Posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/hmm-forward-backward/">
+            Hmm Forward Backward
+            <small>21 Sep 2016</small>
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+    </div>
+
+  </body>
+</html>

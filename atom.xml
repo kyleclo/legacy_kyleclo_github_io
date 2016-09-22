@@ -4,13 +4,157 @@
  <title>Kyle Lo</title>
  <link href="/atom.xml" rel="self"/>
  <link href="/"/>
- <updated>2016-09-07T15:42:07-07:00</updated>
+ <updated>2016-09-22T14:49:14-07:00</updated>
  <id></id>
  <author>
    <name>Kyle Lo</name>
    <email>kyleclo@uw.edu</email>
  </author>
 
+ 
+ <entry>
+   <title>Derivations for the forward-backward algorithm</title>
+   <link href="/forward-backward-algorithm/"/>
+   <updated>2016-09-21T00:00:00-07:00</updated>
+   <id>/forward-backward-algorithm</id>
+   <content type="html">&lt;p&gt;These are simple derivations for the famous forward-backward algorithm by &lt;a href=&quot;https://projecteuclid.org/euclid.aoms/1177697196&quot;&gt;Baum et. al. (1970)&lt;/a&gt; for computing posteriors of hidden states in HMMs.&lt;/p&gt;
+
+&lt;h1 id=&quot;hidden-markov-model&quot;&gt;Hidden Markov model&lt;/h1&gt;
+
+&lt;h3 id=&quot;specification&quot;&gt;Specification&lt;/h3&gt;
+&lt;p&gt;Let there be a sequence ${x_1,\dots,x_n}$, where each $x_t$ denotes the system as being in a hidden state at time $t$.  The sequence is a discrete time Markov chain, so&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;p(x_t \vert x_1,\dots,x_{t-1}) = p(x_t \vert x_{t-1})&lt;/script&gt;
+
+&lt;p&gt;There are $m$ hidden states, and $p(x_t = j \vert x_{t-1} = i)$ is the probability of transition from state $i$ to state $j$.&lt;/p&gt;
+
+&lt;p&gt;While the states are hidden, we observe a sequence of output values ${y_1,\dots,y_n}$, where each $y_t$ is drawn from a distribution $p(y_t \vert x_t)$ that depends on the current hidden state $x_t$.  Note that $y_t$ can be discrete or continuous.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://upload.wikimedia.org/wikipedia/commons/8/83/Hmm_temporal_bayesian_net.svg&quot; alt=&quot;HMM&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;(Image taken from Wikipedia)&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;For simplicity, we’ll assume these probabilities/distributions are the same across time.&lt;/p&gt;
+
+&lt;!-- ### Example --&gt;
+&lt;!-- Let $x_t \in \{\text{Sick}, \text{Healthy}\}$, and let $y_t$ be counts of the number of sneezes on day $t$.  --&gt;
+
+&lt;!-- Suppose you recorded how many times you sneezed every day for a year (weirdo).  Can you tell which days you were sick from this data? --&gt;
+
+&lt;h3 id=&quot;goal&quot;&gt;Goal&lt;/h3&gt;
+&lt;p&gt;We want to compute the posterior probabilities over possible hidden states $p(x_t \vert y_1,\dots,y_n)$ at all time points $t = 1,\dots,n$.&lt;/p&gt;
+
+&lt;h1 id=&quot;forward-backward-algorithm&quot;&gt;Forward-backward algorithm&lt;/h1&gt;
+
+&lt;h3 id=&quot;given&quot;&gt;Given&lt;/h3&gt;
+
+&lt;p&gt;Assume we know for $t = 1,\dots,n$:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;All transition probabilities $p(x_t \vert x_{t-1})$&lt;/li&gt;
+  &lt;li&gt;All output probabilities $p(y_t \vert x_t)$&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;and also the distribution for the initial state $p(x_1)$.&lt;/p&gt;
+
+&lt;h3 id=&quot;motivation&quot;&gt;Motivation&lt;/h3&gt;
+
+&lt;p&gt;From the image above, we see that emissions are conditionally independent of past emissions given the current hidden state.  Hence, we can factor our target posterior:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align} p(x_t \vert y_1,\dots,y_n) &amp;\propto p(x_t, y_1, \dots, y_n) \\ &amp;=  p(y_{t+1},\dots,y_n \vert x_t, y_1,\dots,y_t) p(x_t, y_1,\dots,y_t) \\ &amp;= \underbrace{p(y_{t+1},\dots,y_n \vert x_t)}_{\text{backward}} \underbrace{p(x_t, y_1,\dots,y_t)}_{\text{forward}}  \end{align} %]]&gt;&lt;/script&gt;
+
+&lt;h3 id=&quot;algorithm&quot;&gt;Algorithm&lt;/h3&gt;
+&lt;p&gt;For each $t = 1,\dots,n$:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;Use the forward algorithm to compute $p(x_1,y_1,\dots,y_t)$&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Use the backward algorithm to compute $p(y_{t+1},\dots,y_n \vert x_t)$&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Multiply the outcomes together to get $p(x_t \vert y_1,\dots,y_n)$&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h1 id=&quot;forward-algorithm&quot;&gt;Forward algorithm&lt;/h1&gt;
+
+&lt;h3 id=&quot;motivation-1&quot;&gt;Motivation&lt;/h3&gt;
+&lt;p&gt;Suppose we’re interested in the distribution of the observed output sequence $p(y_1\dots,y_n)$.&lt;/p&gt;
+
+&lt;p&gt;A brute force method:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align} p(y_1,\dots,y_n) &amp;= \sum_{\{x_1,\dots,x_n\} } p(x_1,\dots,x_n) p(y_1,\dots,y_n \vert x_1,\dots,x_n)  \\
+&amp;= \sum_{\{x_1,\dots,x_n\} } p(x_1) \prod_{t=2}^n p(x_t \vert x_{t-1}) \prod_{t=1}^n p(y_t \vert x_t) \\
+&amp;= \sum_{\{x_1,\dots,x_n\} } p(x_1) p(y_1 \vert x_t) \prod_{t=2}^n p(x_t \vert x_{t-1})  p(y_t \vert x_t) \end{align} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;This takes $\mathcal{O}(nm^n)$ operations!&lt;/p&gt;
+
+&lt;p&gt;Instead, here’s a $\mathcal{O}(nm^2)$ method that uses dynamic programming in the form of the forward algorithm:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;p(y_1,\dots,y_n) = \sum_{x_n = 1}^m \underbrace{p(x_n, y_1,\dots,y_n)}_{\text{use forward algorithm}}&lt;/script&gt;
+
+&lt;p&gt;Now we just need those summands.&lt;/p&gt;
+
+&lt;h3 id=&quot;algorithm-1&quot;&gt;Algorithm&lt;/h3&gt;
+
+&lt;p&gt;First compute:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;p(x_1,y_1) = p(y_1 \vert x_1)p(x_1)&lt;/script&gt;
+
+&lt;p&gt;Then for each $t = 2,\dots,n$ compute:
+&lt;script type=&quot;math/tex&quot;&gt;% &lt;![CDATA[
+\begin{align} p(x_t,y_1,\dots,y_t) &amp;= \sum_{x_{t-1} = 1}^m p(x_t,x_{t-1}, y_1,\dots,y_t) \\ 
+&amp;= \sum_{x_{t-1} = 1}^m p(y_t \vert x_t,x_{t-1}, y_1,\dots,y_{t-1}) p(x_t \vert x_{t-1}, y_1,\dots,y_{t-1}) p(x_{t-1}, y_1,\dots,y_{t-1}) \\
+&amp;= \underbrace{p(y_t \vert x_t)}_{\text{known}} \sum_{x_{t-1} = 1}^m  \underbrace{p(x_t \vert x_{t-1})}_{\text{known}} \underbrace{p(x_{t-1}, y_1,\dots,y_{t-1})}_{\text{forward algorithm result for }$t-1$} \\ \end{align} %]]&gt;&lt;/script&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;backward-algorithm&quot;&gt;Backward algorithm&lt;/h1&gt;
+
+&lt;p&gt;We have the forward part needed to compute $p(x_t \vert y_1,\dots,y_n)$.  Now we need the backward part.&lt;/p&gt;
+
+&lt;h3 id=&quot;algorithm-2&quot;&gt;Algorithm&lt;/h3&gt;
+
+&lt;p&gt;For $t = n$:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;p(y_{n+1} \vert x_n) = 1&lt;/script&gt;
+
+&lt;p&gt;Note that the notation is a formality since there is no observed $y_{n+1}$.&lt;/p&gt;
+
+&lt;p&gt;Then for each $t = n-1,\dots,1$ compute:
+&lt;script type=&quot;math/tex&quot;&gt;% &lt;![CDATA[
+\begin{align}p(y_{t+1},\dots,y_n \vert x_t) &amp;= \sum_{x_{t+1} = 1}^m p(y_{t+1},\dots,y_n,x_{t+1} \vert x_t) \\
+&amp;= \sum_{x_{t+1} = 1}^m p(y_{t+2}, \dots,y_n \vert y_{t+1}, x_t, x_{t+1}) p(y_{t+1},x_{t+1} \vert x_t) \\
+&amp;= \sum_{x_{t+1} = 1}^m p(y_{t+2}, \dots,y_n \vert y_{t+1}, x_t, x_{t+1}) p(y_{t+1} \vert  x_t, x_{t+1}) p(x_{t+1} \vert x_t)\\
+&amp;= \sum_{x_{t+1} = 1}^m  \underbrace{p(y_{t+2}, \dots,y_n \vert  x_{t+1})}_{\text{backward algorithm result for }$t+1$} \underbrace{p(y_{t+1} \vert  x_{t+1})}_{\text{known}} \underbrace{p(x_{t+1} \vert x_t)}_{\text{known}}  \\ \end{align} %]]&gt;&lt;/script&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;Now we have all the pieces to compute $p(x_t \vert y_1,\dots,y_n)$.  We can use this to find the most likely state at any time $t$.&lt;/p&gt;
+
+&lt;p&gt;Of course, this isn’t enough by itself:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;The Viterbi algorithm finds the most likely sequence of hidden states (i.e. ${x_1,\dots,x_n}$ such that $p(x_1,\dots,x_n \vert y_1,\dots,y_n)$ is maximized ).&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;The Baum-Welch algorithm uses the forward-backward algorithm to compute maximum likelihood estimates of the HMM parameters (i.e. the probabilities/distributions that we took as “given”).&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;postface&quot;&gt;Postface&lt;/h1&gt;
+
+&lt;p&gt;Had to learn stuff about HMMs while working on changepoint problems, and I figured I might as well organize some notes for future reference.  Hopefully someone else also finds these derivations useful.&lt;/p&gt;
+
+&lt;p&gt;Credit given to Jeffrey Miller’s &lt;a href=&quot;https://www.youtube.com/user/mathematicalmonk&quot;&gt;mini-lectures&lt;/a&gt;, which were really easy to digest for someone new to the material like myself.&lt;/p&gt;
+
+&lt;p&gt;For an introduction to HMMs, I recommend reading Sections I-III of:
+&lt;em&gt;Rabiner, L. R. (1989). A tutorial on hidden Markov models and selected applications in speech recognition. Proceedings of the IEEE, 77(2), 257-286.&lt;/em&gt;&lt;/p&gt;
+</content>
+ </entry>
  
 
 </feed>

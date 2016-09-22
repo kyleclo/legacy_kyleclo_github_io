@@ -1,0 +1,139 @@
+<p>These are simple derivations for the famous forward-backward algorithm by <a href="https://projecteuclid.org/euclid.aoms/1177697196">Baum et. al. (1970)</a> for computing posteriors of hidden states in HMMs.  </p>
+
+<h1 id="hidden-markov-model">Hidden Markov model</h1>
+
+
+
+<h3 id="specification">Specification</h3>
+
+<p>Let there be a sequence <script type="math/tex" id="MathJax-Element-18811">\{x_1,\dots,x_n\}</script>, where each <script type="math/tex" id="MathJax-Element-18812">x_t</script> denotes the system as being in a hidden state at time <script type="math/tex" id="MathJax-Element-18813">t</script>.  The sequence is a discrete time Markov chain, so</p>
+
+
+
+<p><script type="math/tex; mode=display" id="MathJax-Element-18830">p(x_t|x_1,\dots,x_{t-1}) = p(x_t|x_{t-1})</script></p>
+
+<p>There are <script type="math/tex" id="MathJax-Element-18831">m</script> hidden states, and <script type="math/tex" id="MathJax-Element-18832">p(x_t = j|x_{t-1} = i)</script> is the probability of transition from state <script type="math/tex" id="MathJax-Element-18833">i</script> to state <script type="math/tex" id="MathJax-Element-18834">j</script>.</p>
+
+<p>While the states are hidden, we observe a sequence of output values <script type="math/tex" id="MathJax-Element-18835">\{y_1,\dots,y_n\}</script>, where each <script type="math/tex" id="MathJax-Element-18836">y_t</script> is drawn from a distribution <script type="math/tex" id="MathJax-Element-18837">p(y_t|x_t)</script> that depends on the current hidden state <script type="math/tex" id="MathJax-Element-18838">x_t</script>.  Note that <script type="math/tex" id="MathJax-Element-18839">y_t</script> can be discrete or continuous.</p>
+
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/8/83/Hmm_temporal_bayesian_net.svg" alt="HMM" title=""></p>
+
+<p><em>(Image taken from Wikipedia)</em></p>
+
+<p>For simplicity, we’ll assume these probabilities/distributions are the same across time. </p>
+
+<p><!-- ### Example --> <br>
+<!-- Let $x_t \in \{\text{Sick}, \text{Healthy}\}$, and let $y_t$ be counts of the number of sneezes on day $t$.  --></p>
+
+<!-- Suppose you recorded how many times you sneezed every day for a year (weirdo).  Can you tell which days you were sick from this data? -->
+
+
+
+<h3 id="goal">Goal</h3>
+
+<p>We want to compute the posterior probabilities over possible hidden states <script type="math/tex" id="MathJax-Element-18840">p(x_t|y_1,\dots,y_n)</script> at all time points <script type="math/tex" id="MathJax-Element-18841">t = 1,\dots,n</script>.</p>
+
+
+
+<h1 id="forward-backward-algorithm">Forward-backward algorithm</h1>
+
+
+
+<h3 id="given">Given</h3>
+
+<p>Assume we know for <script type="math/tex" id="MathJax-Element-18842">t = 1,\dots,n</script>:</p>
+
+<ul>
+<li>All transition probabilities <script type="math/tex" id="MathJax-Element-18843">p(x_t|x_{t-1})</script> </li>
+<li>All output probabilities <script type="math/tex" id="MathJax-Element-18844">p(y_t|x_t)</script> </li>
+</ul>
+
+<p>and also the distribution for the initial state <script type="math/tex" id="MathJax-Element-18845">p(x_1)</script>.</p>
+
+<!-- Think of these as the HMM model parameters (which we'll need to tune later).  -->
+
+
+
+<h3 id="motivation">Motivation</h3>
+
+<p>From the image above, we see that emissions are conditionally independent of past emissions given the current hidden state.  Hence, we can factor our target posterior: <br>
+<script type="math/tex; mode=display" id="MathJax-Element-18846"> \begin{align} p(x_t|y_1,\dots,y_n) &\propto p(x_t, y_1, \dots, y_n) \\ &=  p(y_{t+1},\dots,y_n|x_t, y_1,\dots,y_t) p(x_t, y_1,\dots,y_t) \\ &= \underbrace{p(y_{t+1},\dots,y_n|x_t)}_{\text{backward}} \underbrace{p(x_t, y_1,\dots,y_t)}_{\text{forward}}  \end{align}</script></p>
+
+<h3 id="algorithm">Algorithm</h3>
+
+<p>For each <script type="math/tex" id="MathJax-Element-17962">t = 1,\dots,n</script>:</p>
+
+<ol>
+<li><p>Use the forward algorithm to compute <script type="math/tex" id="MathJax-Element-17963">p(x_1,y_1,\dots,y_t)</script></p></li>
+<li><p>Use the backward algorithm to compute <script type="math/tex" id="MathJax-Element-17964">p(y_{t+1},\dots,y_n|x_t)</script></p></li>
+<li><p>Multiply the outcomes together to get <script type="math/tex" id="MathJax-Element-17965">p(x_t|y_1,\dots,y_n)</script></p></li>
+</ol>
+
+<h1 id="forward-algorithm">Forward algorithm</h1>
+
+
+
+<h3 id="motivation-1">Motivation</h3>
+
+<p>Suppose we’re interested in the distribution of the observed output sequence <script type="math/tex" id="MathJax-Element-18054">p(y_1\dots,y_n)</script>. </p>
+
+<p>A brute force method: <br>
+<script type="math/tex; mode=display" id="MathJax-Element-18055">\begin{align} p(y_1,\dots,y_n) &= \sum_{\{x_1,\dots,x_n\} } p(x_1,\dots,x_n) p(y_1,\dots,y_n|x_1,\dots,x_n)  \\
+&= \sum_{\{x_1,\dots,x_n\} } p(x_1) \prod_{t=2}^n p(x_t|x_{t-1}) \prod_{t=1}^n p(y_t|x_t) \\
+&= \sum_{\{x_1,\dots,x_n\} } p(x_1) p(y_1|x_t) \prod_{t=2}^n p(x_t|x_{t-1})  p(y_t|x_t) \end{align}</script></p>
+
+<p>This takes <script type="math/tex" id="MathJax-Element-18056">\mathcal{O}(nm^n)</script> operations!  </p>
+
+<p>Instead, here’s a <script type="math/tex" id="MathJax-Element-18057">\mathcal{O}(nm^2)</script> method that uses dynamic programming in the form of the forward algorithm:</p>
+
+<p><script type="math/tex; mode=display" id="MathJax-Element-18060">p(y_1,\dots,y_n) = \sum_{x_n = 1}^m \underbrace{p(x_n, y_1,\dots,y_n)}_{\text{use forward algorithm}}</script></p>
+
+<p>Now we just need those summands.</p>
+
+<h3 id="algorithm-1">Algorithm</h3>
+
+<p>First compute: <br>
+<script type="math/tex; mode=display" id="MathJax-Element-18346">p(x_1,y_1) = p(y_1|x_1)p(x_1)</script></p>
+
+<p>Then for each <script type="math/tex" id="MathJax-Element-18347">t = 2,\dots,n</script> compute: <br>
+<script type="math/tex; mode=display" id="MathJax-Element-18348"> \begin{align} p(x_t,y_1,\dots,y_t) &= \sum_{x_{t-1} = 1}^m p(x_t,x_{t-1}, y_1,\dots,y_t) \\ 
+&= \sum_{x_{t-1} = 1}^m p(y_t|x_t,x_{t-1}, y_1,\dots,y_{t-1}) p(x_t|x_{t-1}, y_1,\dots,y_{t-1}) p(x_{t-1}, y_1,\dots,y_{t-1}) \\
+&= \underbrace{p(y_t|x_t)}_{\text{known}} \sum_{x_{t-1} = 1}^m  \underbrace{p(x_t|x_{t-1})}_{\text{known}} \underbrace{p(x_{t-1}, y_1,\dots,y_{t-1})}_{\text{forward algorithm result for $t-1$}} \\ \end{align}</script></p>
+
+<h1 id="backward-algorithm">Backward algorithm</h1>
+
+<p>We have the forward part needed to compute <script type="math/tex" id="MathJax-Element-18101">p(x_t|y_1,\dots,y_n)</script>.  Now we need the backward part.</p>
+
+<h3 id="algorithm-2">Algorithm</h3>
+
+<p>For <script type="math/tex" id="MathJax-Element-18466">t = n</script>: <br>
+<script type="math/tex; mode=display" id="MathJax-Element-18467">p(y_{n+1}|x_n) = 1</script> <br>
+Note that the notation is a formality since there is no observed <script type="math/tex" id="MathJax-Element-18468">y_{n+1}</script>.</p>
+
+<p>Then for each <script type="math/tex" id="MathJax-Element-18469">t = n-1,\dots,1</script> compute: <br>
+<script type="math/tex; mode=display" id="MathJax-Element-18470">\begin{align}p(y_{t+1},\dots,y_n|x_t) &= \sum_{x_{t+1} = 1}^m p(y_{t+1},\dots,y_n,x_{t+1}|x_t) \\
+&= \sum_{x_{t+1} = 1}^m p(y_{t+2}, \dots,y_n|y_{t+1}, x_t, x_{t+1}) p(y_{t+1},x_{t+1}|x_t) \\
+&= \sum_{x_{t+1} = 1}^m p(y_{t+2}, \dots,y_n|y_{t+1}, x_t, x_{t+1}) p(y_{t+1}| x_t, x_{t+1}) p(x_{t+1}|x_t)\\
+&= \sum_{x_{t+1} = 1}^m  \underbrace{p(y_{t+2}, \dots,y_n| x_{t+1})}_{\text{backward algorithm result for $t+1$}} \underbrace{p(y_{t+1}| x_{t+1})}_{\text{known}} \underbrace{p(x_{t+1}|x_t)}_{\text{known}}  \\ \end{align}</script></p>
+
+
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>Now we have all the pieces to compute <script type="math/tex" id="MathJax-Element-18756">p(x_t|y_1,\dots,y_n)</script>.  We can use this to find the most likely state at any time <script type="math/tex" id="MathJax-Element-18757">t</script>.</p>
+
+<p>Of course, this isn’t enough by itself:</p>
+
+<ul>
+<li><p>The Viterbi algorithm finds the most likely sequence of hidden states (i.e. <script type="math/tex" id="MathJax-Element-18758">\{x_1,\dots,x_n\}</script> such that <script type="math/tex" id="MathJax-Element-18759">p(x_1,\dots,x_n|y_1,\dots,y_n)</script> is maximized ).</p></li>
+<li><p>The Baum-Welch algorithm uses the forward-backward algorithm to compute maximum likelihood estimates of the HMM parameters (i.e. the probabilities/distributions that we took as “given”).  </p></li>
+</ul>
+
+<h1 id="postface">Postface</h1>
+
+<p>Had to learn stuff about HMMs while working on changepoint problems, and I figured I might as well organize some notes for future reference.  Hopefully someone else also finds these derivations useful.</p>
+
+<p>Credit given to Jeffrey Miller’s <a href="https://www.youtube.com/user/mathematicalmonk">mini-lectures</a>, which were really easy to digest for someone new to the material like myself.  </p>
+
+<p>For an introduction to HMMs, I recommend reading Sections I-III of: <br>
+<em>Rabiner, L. R. (1989). A tutorial on hidden Markov models and selected applications in speech recognition. Proceedings of the IEEE, 77(2), 257-286.</em></p>
