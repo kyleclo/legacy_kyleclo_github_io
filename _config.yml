@@ -9,7 +9,7 @@ permalink:        /:categories/:title/  #pretty
 title:            Kyle Lo
 tagline:          'Statistician | Data Scientist | Software Developer'
 description:      Statistics and stuff
-url:              
+url:              #http://kylelo.com
 baseurl:          / 
 
 author:
