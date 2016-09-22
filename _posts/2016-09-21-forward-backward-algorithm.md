@@ -85,7 +85,7 @@ $$p(x_1,y_1) = p(y_1 \vert x_1)p(x_1)$$
 Then for each $t = 2,\dots,n$ compute:
 $$ \begin{align} p(x_t,y_1,\dots,y_t) &= \sum_{x_{t-1} = 1}^m p(x_t,x_{t-1}, y_1,\dots,y_t) \\ 
 &= \sum_{x_{t-1} = 1}^m p(y_t \vert x_t,x_{t-1}, y_1,\dots,y_{t-1}) p(x_t \vert x_{t-1}, y_1,\dots,y_{t-1}) p(x_{t-1}, y_1,\dots,y_{t-1}) \\
-&= \underbrace{p(y_t \vert x_t)}_{\text{known}} \sum_{x_{t-1} = 1}^m  \underbrace{p(x_t \vert x_{t-1})}_{\text{known}} \underbrace{p(x_{t-1}, y_1,\dots,y_{t-1})}_{\text{forward algorithm result for }$t-1$} \\ \end{align}$$
+&= \underbrace{p(y_t \vert x_t)}_{\text{known}} \sum_{x_{t-1} = 1}^m  \underbrace{p(x_t \vert x_{t-1})}_{\text{known}} \underbrace{p(x_{t-1}, y_1,\dots,y_{t-1})}_{\text{forward algorithm result for }t-1} \\ \end{align}$$
 
 
 # Backward algorithm
@@ -104,7 +104,7 @@ Then for each $t = n-1,\dots,1$ compute:
 $$\begin{align}p(y_{t+1},\dots,y_n \vert x_t) &= \sum_{x_{t+1} = 1}^m p(y_{t+1},\dots,y_n,x_{t+1} \vert x_t) \\
 &= \sum_{x_{t+1} = 1}^m p(y_{t+2}, \dots,y_n \vert y_{t+1}, x_t, x_{t+1}) p(y_{t+1},x_{t+1} \vert x_t) \\
 &= \sum_{x_{t+1} = 1}^m p(y_{t+2}, \dots,y_n \vert y_{t+1}, x_t, x_{t+1}) p(y_{t+1} \vert  x_t, x_{t+1}) p(x_{t+1} \vert x_t)\\
-&= \sum_{x_{t+1} = 1}^m  \underbrace{p(y_{t+2}, \dots,y_n \vert  x_{t+1})}_{\text{backward algorithm result for }$t+1$} \underbrace{p(y_{t+1} \vert  x_{t+1})}_{\text{known}} \underbrace{p(x_{t+1} \vert x_t)}_{\text{known}}  \\ \end{align}$$
+&= \sum_{x_{t+1} = 1}^m  \underbrace{p(y_{t+2}, \dots,y_n \vert  x_{t+1})}_{\text{backward algorithm result for }t+1} \underbrace{p(y_{t+1} \vert  x_{t+1})}_{\text{known}} \underbrace{p(x_{t+1} \vert x_t)}_{\text{known}}  \\ \end{align}$$
 
 # Conclusion
 
@@ -123,5 +123,6 @@ Had to learn stuff about HMMs while working on changepoint problems, and I figur
 
 Credit given to Jeffrey Miller's [mini-lectures](https://www.youtube.com/user/mathematicalmonk), which were really easy to digest for someone new to the material like myself.  
 
-For an introduction to HMMs, I recommend reading Sections I-III of:
+For an introduction to HMMs, I recommend reading Sections I-III of: 
+
 *Rabiner, L. R. (1989). A tutorial on hidden Markov models and selected applications in speech recognition. Proceedings of the IEEE, 77(2), 257-286.*
