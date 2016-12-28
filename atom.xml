@@ -4,13 +4,512 @@
  <title>Kyle Lo</title>
  <link href="/atom.xml" rel="self"/>
  <link href="/"/>
- <updated>2016-09-22T15:36:05-07:00</updated>
+ <updated>2016-12-28T13:33:02-08:00</updated>
  <id></id>
  <author>
    <name>Kyle Lo</name>
    <email>kyleclo@uw.edu</email>
  </author>
 
+ 
+ <entry>
+   <title>Deriving the backpropagation algorithm</title>
+   <link href="/deriving-the-backpropagation-algorithm/"/>
+   <updated>2016-12-28T00:00:00-08:00</updated>
+   <id>/deriving-the-backpropagation-algorithm</id>
+   <content type="html">&lt;p&gt;Here are some notes containing step-by-step derivations of the backpropagation algorithm for neural networks.&lt;/p&gt;
+
+&lt;p&gt;This post assumes the reader is already familiar with neural networks and is comfortable with calculus and linear algebra; this content serves more as a reference than as an introduction to the subject.&lt;/p&gt;
+
+&lt;p&gt;Regarding notation:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;All vectors are column vectors unless otherwise specified&lt;/li&gt;
+  &lt;li&gt;The notation $g(x)$ for $g: \mathbb{R} \to \mathbb{R}$ and $x$ is a vector or matrix means the function is being applied element-wise&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;h1 id=&quot;logistic-regression&quot;&gt;Logistic regression&lt;/h1&gt;
+
+&lt;h3 id=&quot;setup&quot;&gt;Setup&lt;/h3&gt;
+
+&lt;p&gt;We observe data $(y_1, x_1), \dots, (y_n, x_n)$ where $y_i \in {1, 0}$.&lt;/p&gt;
+
+&lt;p&gt;We assume the model $y \sim$ Bernoulli$\left(p(x) \right)$ where the mean response is $p(x) = \phi(w^T x)$.&lt;/p&gt;
+
+&lt;p&gt;$x$ is a vector of length $m$.&lt;/p&gt;
+
+&lt;p&gt;$\phi(z) = \frac{1}{1 + e^{-z}}$ is the expit (aka logistic) function.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;loss-function&quot;&gt;Loss function&lt;/h3&gt;
+
+&lt;p&gt;We estimate $w$ using the maximum likelihood approach.  In other words, our goal is to minimize the negative log-likelihood loss (aka cross-entropy loss):&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align}
+\mathcal{L}(w) &amp;= - \log \prod_{i=1}^n p_i^{y_i} (1 - p_i)^{1-y_i}  \\
+&amp;= - \sum_{i=1}^n \left[ y_i \log p_i + (1 - y_i) \log (1 - p_i) \right] \\
+&amp;= - \sum_{i=1}^n \left[ y_i \log \phi(w^T x_i) + (1 - y_i) \log \left(1 - \phi(w^T x_i) \right) \right] 
+\end{align} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;Note that $p_i$ is shorthand for $p(x_i)$.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;differentiation&quot;&gt;Differentiation&lt;/h3&gt;
+
+&lt;p&gt;The derivative of the expit function is $\phi’(z) = \phi(z) \left(1 - \phi(z)\right)$.&lt;/p&gt;
+
+&lt;p&gt;Then by chain rule, we derive the derivative of $\mathcal{L}(w)$ with respect to $w$:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align}
+\frac{\partial \mathcal{L}(w)}{\partial w} &amp;= \sum_{i=1}^n \frac{\partial \mathcal{L}_i}{\partial \phi(w^T x_i)} \frac{\partial \phi(w^T x_i)}{\partial w^T x_i} \frac{\partial w^T x_i}{\partial w} \\
+&amp;= -\sum_{i=1}^n  \left[ \frac{y_i}{\phi(w^T x_i)} + \frac{1 - y_i}{1 - \phi(w^T x_i)} \right] \phi(w^T x_i) \left(1 - \phi(w^T x_i) \right) x_i \\
+&amp;= - \sum_{i=1}^n \left[y_i \left( 1 - \phi(w^T x_i) \right) - (1 - y_i) \phi(w^T x_i)  \right] x_i \\
+&amp;= - \sum_{i=1}^n \left[ y_i - \phi(w^T x_i)   \right] x_i \\
+\end{align} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;which is a vector of length $m$.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h1 id=&quot;softmax-regression&quot;&gt;Softmax regression&lt;/h1&gt;
+
+&lt;p&gt;We think of our binary response as representing an observation’s membership in one of two classes.  With this in mind, we now generalize the logistic regression problem to handle $K$ classes.&lt;/p&gt;
+
+&lt;h3 id=&quot;setup-1&quot;&gt;Setup&lt;/h3&gt;
+
+&lt;p&gt;Our response $y$ indicates membership in one of $K$ classes.  We’ll use a one-hot encoding for the response, meaning each $y$ is a vector of length $K$ containing $0$’s except for the $k^{th}$ element which equals $1$ representing membership in the $k^{th}$ class.&lt;/p&gt;
+
+&lt;p&gt;Statistically, we assume $y \sim$ Categorical$\left(p_1(x), \dots, p_K(x)\right)$ where the mean response is $\left[p_1(x), \dots, p_K(x)\right]^T = \phi(w^T x)$.&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;Note that instead of a vector, $w$ is now an $m \times K$ matrix.&lt;/p&gt;
+
+&lt;p&gt;And $\phi$ is now the softmax function which takes input vector $z$ of length $d$ and outputs vector:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\phi(z) = \frac{e^z}{\sum_j e^{z_j}} = \begin{pmatrix} e^{z_1} / \sum_j e^{z_j} \\ \vdots \\ e^{z_d} / \sum_j e^{z_j} \end{pmatrix}&lt;/script&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;loss-function-1&quot;&gt;Loss function&lt;/h3&gt;
+
+&lt;p&gt;We’re still minimizing negative log-likelihood loss:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align}
+\mathcal{L}(w) &amp;= -\sum_{i=1}^n y_i^T \log p_i \\
+&amp;= -\sum_{i=1}^n y_i^T \log \phi(w^T x_i) 
+\end{align} %]]&gt;&lt;/script&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;differentiation-1&quot;&gt;Differentiation&lt;/h3&gt;
+
+&lt;p&gt;To keep things simple, let’s do this derivation for a single observation (hence, dropping the summation and index $i$ for now).  Also, let’s establish some shorthand notation:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;$p = \phi(z)$ is the output vector, and $p_k$ denotes its $k^{th}$ element&lt;/li&gt;
+  &lt;li&gt;$z = w^T x$ is the input vector to $\phi$, and $z_k$ denotes its $k^{th}$ element&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Then by chain rule:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \mathcal{L}(w)}{\partial w} = \frac{\partial \mathcal{L}}{\partial p} \frac{\partial p}{\partial z} \frac{\partial z}{\partial w}&lt;/script&gt;
+
+&lt;p&gt;where:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;$\frac{\partial \mathcal{L}}{\partial p}$ is a row vector of length $K$:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\left(-y \odot \frac{1}{p}\right)^T = \begin{pmatrix} -\frac{y_1}{p_1} &amp; -\frac{y_2}{p_2} &amp; \dots &amp; -\frac{y_K}{p_K} \end{pmatrix} %]]&gt;&lt;/script&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;$\frac{\partial p}{\partial z}$ is a $K \times K$ matrix (i.e. &lt;a href=&quot;#derivative-of-the-softmax-function&quot;&gt;derivative of softmax function&lt;/a&gt; $\phi$ with respect to input vector $z$):&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{pmatrix} p_1 (1 - p_1) &amp; -p_1 p_2 &amp; \dots &amp; - p_1 p_K \\ 
+- p_2 p_1 &amp; p_2 (1-p_2) &amp; \dots &amp; - p_2 p_K \\ 
+\vdots  &amp; \vdots &amp; \ddots &amp; \vdots \\ 
+-p_K p_1 &amp; -p_K p_2 &amp; \dots &amp; p_K (1-p_K) \end{pmatrix} %]]&gt;&lt;/script&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;$\frac{\partial z}{\partial w}$ is a $K \times m \times K$ tensor.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;Multiplication of the first two terms gives a row vector of length $K$:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align}
+\frac{\partial \mathcal{L}}{\partial p}  \frac{\partial p}{\partial z}&amp;= \begin{pmatrix} - y_1 (1-p_1) + \sum_{k \neq 1} y_k p_1 &amp;  \dots &amp; - y_K (1-p_K) + \sum_{k \neq K} y_k p_K \end{pmatrix} \\
+&amp;= \begin{pmatrix} - y_1 + p_1 \sum_{k=1}^K y_k  &amp;  \dots &amp; - y_K + p_K \sum_{k=1}^K y_k  \end{pmatrix} \\
+&amp;= \begin{pmatrix} p_1 - y_1  &amp; \dots &amp; p_K - y_K \end{pmatrix} \\ 
+&amp;= \left[\phi(w^T x) - y\right]^T
+\end{align} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;Then multiplying against the tensor term gives an $m \times K$ matrix:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align}
+\frac{\partial \mathcal{L}}{\partial p} \frac{\partial p}{\partial z} \frac{\partial z}{\partial w} &amp;= \left[\phi(w^T x) - y\right]^T \left[ \frac{\partial w^T x}{\partial w}\right] \\
+&amp;= x \left[\phi(w^T x) - y\right]^T
+\end{align} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;See &lt;a href=&quot;#derivative-of-vector-with-respect-to-matrix&quot;&gt;Appendix&lt;/a&gt; for the more complicated stuff I’ve omitted, including:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;derivations of $\frac{\partial p}{\partial z}$ and $\frac{\partial z}{\partial w}$&lt;/li&gt;
+  &lt;li&gt;explanation why the tensor multiplication works out so nicely (hence why I’ve omitted the actual form of the tensor above; it’s not needed)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;Finally, putting everything back in terms of $n$ observations (and pulling the negative term out of the summation), we have the derivative of $\mathcal{L}(w)$ in terms of $w$:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \mathcal{L}(w)}{\partial w} = -\sum_{i=1}^n x_i \left[y_i - \phi(w^T x_i) \right]^T&lt;/script&gt;
+
+&lt;p&gt;which is an $m \times n$ Jacobian matrix.&lt;/p&gt;
+
+&lt;p&gt;This looks very similar to the derivative in the logistic regression setting (which is honestly kind of anti-climactic after all that work).  In fact, softmax regression for $K = 2$ is equivalent to logistic regression.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h1 id=&quot;neural-network&quot;&gt;Neural network&lt;/h1&gt;
+
+&lt;h3 id=&quot;setup-2&quot;&gt;Setup&lt;/h3&gt;
+
+&lt;p&gt;The neural network framework still assumes $y \sim$ Categorical$\left(p_1(x), \dots, p_K(x)\right)$ but now with a more complicated form for the mean response:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align}
+\left[p_1(x), \dots, p_K(x)\right]^T = h^{(L)} &amp;= \phi_L \left(z^{(L)} \right) \\
+h^{(L-1)} &amp;= \phi_{L-1}\left(z^{(L-1)} \right) \\
+&amp;\vdots \\
+h^{(1)} &amp;= \phi_1\left(z^{(1)} \right) \\
+h^{(0)} &amp;= x 
+\end{align} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;where $z^{(l)} = w_l^T h^{(l-1)}$ for $l = 1,\dots,L$.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;$h^{(0)}, \dots, h^{(L)}$ are vectors of length $m_l$ representing the collection of nodes at layer $l = 0, \dots, L$.  Notably, layers $0$ and $L$ are referred to as the input and output layers, respectively.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;$\phi_1, \dots, \phi_L$ are activation functions that map from $\mathbb{R}^{m_l}$ to $\mathbb{R}^{m_l}$.&lt;/p&gt;
+
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;p&gt;$\phi_L$ is typically the softmax function since we want $h^{(L)}$ entries, like probabilities, to sum to $1$.  Hence, when $L = 1$, a neural network with the softmax activation for its output layer is equivalent to softmax regression.&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;$\phi_1,\dots,\phi_{L-1}$ are often instead characterized by a nonlinear scalar function (e.g. expit, $\tanh$, ReLU) applied element-wise to input vectors.&lt;/p&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;$w_1, \dots, w_L$ are $m_{l-1} \times m_l$ parameter matrices.  Notably, $w_1$ has dimensions $m \times m_1$ to match the input vector $x$, and $w_L$ has dimensions $m_{L-1} \times K$ to match the response $y$.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;loss-function-2&quot;&gt;Loss function&lt;/h3&gt;
+
+&lt;p&gt;Our goal is still to minimize the negative log-likelihood loss:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathcal{L}(w_{1:L}) = - \sum_{i=1}^n y_i^T \log h_i^{(L)}&lt;/script&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;differentiation-2&quot;&gt;Differentiation&lt;/h3&gt;
+
+&lt;p&gt;As it turns out, differentiation for neural networks only differs from differentiation for softmax regression by how many terms appear in the chain rule.&lt;/p&gt;
+
+&lt;p&gt;For simplicity, assume a single observation.  Then:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align} \frac{\partial \mathcal{L}(w_{1:L})}{\partial w_L} &amp;= \underbrace{\frac{\partial \mathcal{L}}{\partial h^{(L)}} \frac{\partial h^{(L)}}{\partial z^{(L)}}}_{\delta^{(L)}} \frac{\partial z^{(L)}}{\partial w_L} \\
+\frac{\partial \mathcal{L}(w_{1:L})}{\partial w_{L-1}} &amp;= \underbrace{\frac{\partial \mathcal{L}}{\partial h^{(L)}} \frac{\partial h^{(L)}}{\partial z^{(L)}} \frac{\partial z^{(L)}}{\partial h^{(L-1)}} \frac{\partial h^{(L-1)}}{\partial z^{(L-1)}}}_{\delta^{(L-1)}} \frac{\partial z^{(L-1)}}{\partial w_{L-1}} \\ 
+&amp;\vdots \\
+\frac{\partial \mathcal{L}(w_{1:L})}{\partial w_1} &amp;= \underbrace{\frac{\partial \mathcal{L}}{\partial h^{(L)}}  \frac{\partial h^{(L)}}{\partial z^{(L)}} \left[ \prod_{l=2}^L \frac{\partial z^{(l)}}{\partial h^{(l-1)}}  \frac{\partial h^{(l-1)}}{\partial z^{(l-1)}} \right]}_{\delta^{(1)}}  \frac{\partial z^{(1)}}{\partial w_1}
+\end{align} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;where:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;$\frac{\partial \mathcal{L}}{\partial h^{(L)}}$ is a row vector of length $K$:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\left(-y \odot \frac{1}{h^{(L)}}\right)^T = \begin{pmatrix} -\frac{y_1}{h^{(L)}_1} &amp; -\frac{y_2}{h^{(L)}_2} &amp; \dots &amp; -\frac{y_K}{h^{(L)}_K} \end{pmatrix} %]]&gt;&lt;/script&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;$\frac{\partial h^{(l)}}{\partial z^{(l)}}$ are $m_l \times m_l$ matrices (i.e. derivative of activation function $\phi_l$ with respect to input vector $z^{(l)}$).&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;$\frac{\partial z^{(l)}}{\partial h^{(l-1)}} = \frac{\partial w_l^T h^{(l-1)}}{\partial h^{(l-1)}} = w_l^T$ are $m_l \times m_{l-1}$ matrices.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;$\frac{\partial z^{(l)}}{\partial w_l}$ is an $m_l \times m_{l-1} \times m_l$ tensor (with same form as $\frac{\partial z}{\partial w}$ for softmax regression with $h_j^{(l-1)}$ replacing the $x_j$ elements).&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;for $l = 1, \dots, L$.&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;Notice that $\delta^{(l)} = \frac{\partial \mathcal{L}}{\partial z^{(l)}} = \frac{\partial \mathcal{L}}{\partial h^{(L)}}  \frac{\partial h^{(L)}}{\partial z^{(L)}} \cdots  \frac{\partial h^{(l)}}{\partial z^{(l)}} $ is a row vector, meaning we can use the previous trick to simplify multiplication with the tensor $\frac{\partial z^{(l)}}{\partial w_l}$:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\delta^{(l)}\frac{\partial z^{(l)}}{\partial w_l} = h^{(l-1)} \delta^{(l)}&lt;/script&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;Finally, returning to $n$ observations, the derivative of $\mathcal{L}(w_{1:L})$ with respect to $w_l$ is:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \mathcal{L}(w_{1:L})}{\partial w_l} = \sum_{i=1}^n h_i^{(l-1)} \delta_i^{(l)}&lt;/script&gt;
+
+&lt;p&gt;for $l = 1,\dots,L$.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;backpropagation&quot;&gt;Backpropagation&lt;/h3&gt;
+
+&lt;p&gt;The backpropagation algorithm is simply an efficient way for computing the derivatives by noticing that $\delta^{(l)}$ terms can be reused between layers:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;Compute $h_i^{(1)}, \dots, h_i^{(L)}$ for $i = 1,\dots,n$.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Initialize $\delta_i = \frac{\partial \mathcal{L}_i}{\partial h_i^{(L)}}\frac{\partial h_i^{(L)}}{\partial z_i^{(L)}}$ for $i = 1,\dots,n$.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;For $l = L$ down to $1$:&lt;/p&gt;
+
+    &lt;p&gt;a. Compute $\frac{\partial \mathcal{L}(w_{1:L})}{\partial w_l} = \sum_{i=1}^n h_i^{(l-1)} \delta_i$.&lt;/p&gt;
+
+    &lt;p&gt;b. Update $\delta_i \gets \delta_i \frac{\partial z^{(l)}}{\partial h^{(l-1)}} \frac{\partial h_i^{(l-1)}}{\partial z_i^{(l-1)}}$ for $i = 1,\dots,n$.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;The $\delta^{(l)}$ computations comprise most of the heavy-lifting since $\frac{\partial h^{(l)}}{\partial z^{(l)}} = \phi’(z^{(l)})$ and $\frac{\partial z^{(l)}}{\partial h^{(l-1)}} = w_l^T$ can be large matrices.  There’s not much we can do about the latter, but see the &lt;a href=&quot;#faster-computation-of-delta-terms&quot;&gt;Appendix&lt;/a&gt; for situations to speed up multiplication with the former.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h1 id=&quot;appendix&quot;&gt;Appendix&lt;/h1&gt;
+
+&lt;h3 id=&quot;derivative-of-the-softmax-function&quot;&gt;Derivative of the softmax function&lt;/h3&gt;
+
+&lt;p&gt;Since the softmax function is $\mathbb{R}^d \to \mathbb{R}^d$,  its derivative is a Jacobian matrix:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\phi&#39;(z) = \begin{pmatrix}
+\frac{\partial \phi(z)_1}{z_1} &amp; \frac{\partial \phi(z)_1}{z_2} &amp; \dots &amp; \frac{\partial \phi(z)_1}{z_d} \\
+\frac{\partial \phi(z)_2}{z_1} &amp; \frac{\partial \phi(z)_2}{z_2} &amp; \dots &amp; \frac{\partial \phi(z)_2}{z_d} \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+\frac{\partial \phi(z)_d}{z_1} &amp; \frac{\partial \phi(z)_d}{z_2} &amp; \dots &amp; \frac{\partial \phi(z)_d}{z_d} \\
+\end{pmatrix} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;We’ll index the rows by $i$ and columns by $j$.&lt;/p&gt;
+
+&lt;p&gt;For $i = j$, by quotient rule:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align}
+\frac{\partial \phi(z)_i}{\partial z_i} &amp;= \frac{e^{z_i} \sum_k e^{z_k} - e^{z_i} e^{z_i}}{ \sum_k e^{z_k} \sum_k e^{z_k} } \\
+&amp;= \frac{e^{z_i}}{\sum_k e^{z_k}} \left(1 - \frac{e^{z_i}}{\sum_k e^{z_k}} \right)\\
+&amp;= \phi(z)_i \left( 1 - \phi(z)_i \right)
+\end{align} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;And for $i \neq j$, by quotient rule:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align}
+\frac{\partial \phi(z)_i}{\partial z_j} &amp;= \frac{0 \sum_k e^{z_k} - e^{z_i} e^{z_j}}{ \sum_k e^{z_k} \sum_k e^{z_k} } \\
+&amp;= - \frac{e^{z_i}}{\sum_k e^{z_k}} \frac{e^{z_j}}{\sum_k e^{z_k}} \\
+&amp;= - \phi(z)_i \phi(z)_j
+\end{align} %]]&gt;&lt;/script&gt;
+
+&lt;h3 id=&quot;derivative-of-vector-with-respect-to-matrix&quot;&gt;Derivative of vector with respect to matrix&lt;/h3&gt;
+
+&lt;p&gt;Let $w$ be an $m \times n$ matrix.  Let $x$ be a vector of length $m$.&lt;/p&gt;
+
+&lt;p&gt;Then:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial w^T x}{\partial w} = 
+\begin{pmatrix} 
+\frac{\partial (w^T x)_1}{\partial w} \\ \frac{\partial (w^T x)_2}{\partial w} \\ \dots \\ \frac{\partial (w^T x)_n}{\partial w} 
+\end{pmatrix}&lt;/script&gt;
+
+&lt;p&gt;is a rank-3 tensor of dimension $n \times m \times n$ where:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\frac{\partial (w^T x)_1 }{\partial w} = \begin{pmatrix} x_1 &amp; 0 &amp; \dots &amp; 0 \\ x_2 &amp; 0 &amp; \dots &amp; 0 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ x_m &amp; 0 &amp; \dots &amp; 0 \end{pmatrix} %]]&gt;&lt;/script&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\frac{\partial (w^T x)_2 }{\partial w} = \begin{pmatrix} 0 &amp; x_1 &amp; 0 &amp; \dots &amp; 0 \\ 0 &amp; x_2 &amp; 0 &amp; \dots &amp; 0 \\ \vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; x_m &amp; 0 &amp; \dots &amp; 0 \end{pmatrix} %]]&gt;&lt;/script&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\vdots&lt;/script&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\frac{\partial (w^T x)_n }{\partial w} = \begin{pmatrix} 0 &amp; \dots &amp; 0 &amp; x_1 \\ 0 &amp; \dots &amp; 0 &amp; x_2 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; \dots &amp; 0 &amp; x_m \end{pmatrix} %]]&gt;&lt;/script&gt;
+
+&lt;h3 id=&quot;left-multiplying-above-tensor-with-a-vector&quot;&gt;Left multiplying (above) tensor with a vector&lt;/h3&gt;
+
+&lt;p&gt;Continued from above.&lt;/p&gt;
+
+&lt;p&gt;Let $a$ be a vector of length $n$.  Then:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align}
+a^T \left[\frac{\partial w^T x}{\partial w}\right] &amp;=  \begin{pmatrix} a_1 &amp; a_2 &amp; \dots &amp; a_n \end{pmatrix}\begin{pmatrix} 
+\frac{\partial (w^T x)_1}{\partial w} \\ \frac{\partial (w^T x)_2}{\partial w} \\ \dots \\ \frac{\partial (w^T x)_n}{\partial w} 
+\end{pmatrix} \\
+&amp;= \sum_{j=1}^n a_j \frac{\partial (w^T x)_j }{\partial w} \\
+&amp;= a_1 \begin{pmatrix} x_1 &amp; 0 &amp; \dots &amp; 0 \\ x_2 &amp; 0 &amp; \dots &amp; 0 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ x_m &amp; 0 &amp; \dots &amp; 0 \end{pmatrix} + \dots + a_n \begin{pmatrix} 0 &amp; \dots &amp; 0 &amp; x_1 \\ 0 &amp; \dots &amp; 0 &amp; x_2 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; \dots &amp; 0 &amp; x_m \end{pmatrix} \\
+&amp;= \begin{pmatrix} a_1 x_1 &amp; a_2 x_1 &amp; \dots &amp; a_n x_1 \\ a_1 x_2 &amp; a_2 x_2 &amp; \dots &amp; a_n x_2 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ a_1 x_m &amp; a_2 x_m &amp; \dots &amp; a_n x_m \end{pmatrix} \\
+&amp;= x a^T
+\end{align} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;Technically, the result is a $1 \times m \times n$ tensor, but we can effectively drop the first dimension and just treat the result as an $m \times n$ matrix.&lt;/p&gt;
+
+&lt;h3 id=&quot;derivatives-of-other-activation-functions&quot;&gt;Derivatives of other activation functions&lt;/h3&gt;
+
+&lt;p&gt;While $\phi_L$ is usually the softmax function, we usually defer to other choices for $\phi_1,\dots,\phi_{L-1}$.&lt;/p&gt;
+
+&lt;p&gt;For example, popular choices include element-wise application of&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;$\phi(z) = \tanh(z) = \frac{1 - e^{-2z}}{1 + e^{-2z}}$ where $\phi’(z) = 1 - \tanh^2(z)$&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;$\phi(z) = ReLU(z) = \max(0, z)$ where $\phi’(z) = \mathbf{1}_{z \gt 0}$&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Then the derivative of the activation function $\phi_l$ characterized by $\phi$ is a diagonal matrix:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\frac{\partial \phi_l(z^{(l)})}{z^{(l)}} = \begin{pmatrix}  \phi&#39;(z_1^{(l)}) &amp; 0 &amp; \dots &amp; 0 \\ 0 &amp; \phi&#39;(z_2^{(l)}) &amp; \dots &amp; 0 \\ \vdots  &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; 0 &amp; \dots &amp; \phi&#39;(z_{m_l}^{(l)})  \end{pmatrix} %]]&gt;&lt;/script&gt;
+
+&lt;h3 id=&quot;faster-computation-of-delta-terms&quot;&gt;Faster computation of delta terms&lt;/h3&gt;
+
+&lt;h4 id=&quot;softmax-output-layer-activation&quot;&gt;Softmax output layer activation&lt;/h4&gt;
+
+&lt;p&gt;Since $\phi_L$ is likely the softmax function, we can use the result from softmax regression:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\delta^{(L)} = \left[h^{(L)} - y\right]^T&lt;/script&gt;
+
+&lt;p&gt;as opposed to performing the full $\frac{\partial \mathcal{L}}{\partial h^{(L)}}  \frac{\partial h^{(L)}}{\partial z^{(L)}}$ multiplication.&lt;/p&gt;
+
+&lt;h4 id=&quot;activation-functions-with-diagonal-jacobians&quot;&gt;Activation functions with diagonal Jacobians&lt;/h4&gt;
+
+&lt;p&gt;On the other hand, $\phi_{L-1},\dots,\phi_1$ are usually chosen to be element-wise applications of $\phi$ (e.g. expit, $\tanh$, ReLU).  Unlike the softmax function, their derivatives are diagonal matrices:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\frac{\partial \phi_l(z)}{\partial z} = \begin{pmatrix} \phi&#39;(z_1) &amp; 0 &amp; 0 &amp; \dots &amp; 0 \\ 0 &amp; \phi&#39;(z_2) &amp; 0 &amp; \dots &amp; 0 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; 0 &amp; 0 &amp; \dots &amp; \phi&#39;(z_d) \end{pmatrix} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;Then in each iteration of backpropagation, the $\delta^{(l)} \to \delta^{(l-1)}$ update can be simplified to:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{align}\delta^{(l-1)} &amp;= \delta^{(l)} \frac{\partial z^{(l)}}{\partial h^{(l-1)}}  \frac{\partial h^{(l-1)}}{\partial z^{(l-1)}} \\
+&amp;= \delta^{(l)} w_l^T \frac{\partial h^{(l-1)}}{\partial z^{(l-1)}} \\
+&amp;= \begin{pmatrix}  \phi&#39;(z^{(l-1)}_1) \sum_j^{m_l} \delta_j^{(l)} w^{(l)}_{1j}  \\  \phi&#39;(z^{(l-1)}_2) \sum_j^{m_l} \delta_j^{(l)} w^{(l)}_{2j} \\ \vdots \\  \phi&#39;(z^{(l-1)}_{m_{l-1}}) \sum_j^{m_l} \delta_j^{(l)} w^{(l)}_{m_{l-1}j} \end{pmatrix}^T \\
+&amp;= \left[ \delta^{(l)} w_l^T\right] \odot \left[\phi&#39;\left(z^{(l-1)}\right)\right]^T
+\end{align} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;Thus, we can replace matrix multiplication of $\frac{\partial h^{(l-1)}}{\partial z^{(l-1)}}$ with the cheaper element-wise multiplication of $\left[\phi’\left(z^{(l-1)}\right)\right]^T$.&lt;/p&gt;
+
+&lt;h1 id=&quot;miscellaneous&quot;&gt;Miscellaneous&lt;/h1&gt;
+
+&lt;p&gt;Here’s a collection of topics that I felt were loosely relevant, but I didn’t know how to fit them into the post.&lt;/p&gt;
+
+&lt;h3 id=&quot;bias&quot;&gt;Bias&lt;/h3&gt;
+
+&lt;p&gt;We’ve failed to address inclusion of a bias term among the parameters.&lt;/p&gt;
+
+&lt;p&gt;For logistic/softmax regression, this can be done by augmenting the inputs $\tilde{x} = [1, x]^T$.  The weight vector $w$ will include an additional element to ensure that the product $\tilde{z} = w^T \tilde{x}$ is computable.  The learned value is the bias.&lt;/p&gt;
+
+&lt;p&gt;For neural networks, we can similarly augment the inputs $\tilde{h}^{(l)} = [1, h^{(l)}]^T$ for $l = 0, \dots, L-1$.  The weight matrices $w_1, \dots, w_L$ will each include an additional row to ensure the products $\tilde{z}_l = w_l^T \tilde{h}^{(l-1)}$  are computable for $l = 1,\dots,L$.&lt;/p&gt;
+
+&lt;h3 id=&quot;quadratic-loss&quot;&gt;Quadratic loss&lt;/h3&gt;
+
+&lt;p&gt;Our derivations have been for negative log-likelihood loss for classification.  For regression problems in which $y$’s can take value beyond ${1, 0}$, the quadratic loss is often used instead:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathcal{L}(w_{1:L}) = \frac{1}{2} \sum_{i=1}^n \left( y_i - h_i^{(L)}\right)^T \left( y_i - h_i^{(L)}\right)&lt;/script&gt;
+
+&lt;p&gt;The same chain rule pattern holds, but now the form of $\frac{\partial \mathcal{L}}{\partial h^{(L)}}$ is different:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \mathcal{L}}{\partial h^{(L)}} = \left(h^{(L)} - y \right)^T&lt;/script&gt;
+
+&lt;p&gt;Everything else remains the same.&lt;/p&gt;
+
+&lt;h3 id=&quot;regularization&quot;&gt;Regularization&lt;/h3&gt;
+
+&lt;p&gt;Maximum likelihood tends to overfit and we often include a penalty term in the loss function to guard against this.  For example:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathcal{L}(w_{1:L}) = \sum_{i=1}^n y^T \log h_i^{(L)} + \frac{\lambda}{2} \vert \vert w \vert \vert_2^2&lt;/script&gt;
+
+&lt;p&gt;where $\lambda &amp;gt; 0$ and $\vert \vert w \vert \vert_2^2$ denotes the sum of squared $w_{i,j}^{(l)}$ (except bias terms).&lt;/p&gt;
+
+&lt;p&gt;Then:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \mathcal{L}(w_{1:L})}{\partial w_l} = \frac{\partial \sum_{i=1}^n y^T \log h_i^{(L)}}{\partial w_l} + \frac{\lambda}{2} \frac{\partial \vert \vert w \vert \vert_2^2}{\partial w_l}&lt;/script&gt;
+
+&lt;p&gt;for which the former term we’ve already derived.  The latter term is:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \vert \vert w \vert \vert_2^2}{\partial w_l} = 2 w_l&lt;/script&gt;
+
+&lt;p&gt;which is an $m_{l-1} \times m_l$ matrix.&lt;/p&gt;
+
+&lt;p&gt;Since regularization only contributes an additive term that doesn’t depend on anything else, the backpropagation algorithm remains unchanged.  We can simply add $\lambda w_l$ to the corresponding $\frac{\partial \mathcal{L}(w_{1:L})}{\partial w_l}$ values afterwards.&lt;/p&gt;
+
+&lt;h3 id=&quot;training&quot;&gt;Training&lt;/h3&gt;
+
+&lt;p&gt;Gradient-based optimization procedures begin with an initial guess $w^{(0)}$ and repeatedly perform an update step until convergence (i.e.$\vert w^{(t+1)} - w^{(t)}\vert \lt \epsilon$).&lt;/p&gt;
+
+&lt;p&gt;Here, $w^{(t)}$ refers to the entire set of parameters at iteration $t$.  This can include all $w_1,\dots,w_L$ of a neural network.&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;Gradient descent update:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;w^{(t+1)} \gets w^{(t)} - \eta \frac{\partial \mathcal{L}(w^{(t)})}{\partial w^{(t)}}&lt;/script&gt;
+
+&lt;p&gt;where $\eta \gt 0$ is the step size (aka learning rate) that is usually chosen to decrease per iteration.&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;For logistic regression, we can use the faster Newton’s method update:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;w^{(t+1)} \gets w^{(t)} - H_{\mathcal{L}}^{-1}(w^{(t)}) \frac{\partial \mathcal{L}(w^{(t)})}{\partial w^{(t)}}&lt;/script&gt;
+
+&lt;p&gt;where $H_{\mathcal{L}}^{-1}$ is the inverse of the Hessian of $\mathcal{L}(w)$:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;H_{\mathcal{L}}^{-1}(w^{(t)}) = \sum_{i=1}^n \phi(w^T x_i) \left(1 - \phi(w^Tx_i) \right) x_i x_i^T&lt;/script&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;For neural networks, gradient descent can get stuck in local optima since the loss function is no longer convex like it is for logistic regression.  Also, models with this many parameters typically require large training sets which may not fit in memory at once.&lt;/p&gt;
+
+&lt;p&gt;A popular alternative is (minibatch) stochastic gradient descent which involves computing the gradient using some manageable $n_{batch} \lt\lt n$ subset of points.  The resulting approximate gradient is noisier which can help the algorithm avoid local optima.&lt;/p&gt;
+</content>
+ </entry>
  
  <entry>
    <title>Derivations for the forward-backward algorithm</title>
