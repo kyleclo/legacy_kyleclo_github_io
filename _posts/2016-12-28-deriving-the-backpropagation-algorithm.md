@@ -5,12 +5,12 @@ title: 'Deriving the backpropagation algorithm'
 
 Here are some notes containing step-by-step derivations of the backpropagation algorithm for neural networks.  
 
-This post assumes the reader is already familiar with neural networks and is comfortable with calculus and linear algebra; this content serves more as a reference than as an introduction to the subject. 
+This post serves more as a reference than as an introduction to the subject.  It assumes the reader is already familiar with neural networks and is comfortable with differentiation and matrix algebra. 
 
 Regarding notation:
 
-- All vectors are column vectors unless otherwise specified
-- The notation $g(x)$ for $g: \mathbb{R} \to \mathbb{R}$ and $x$ is a vector or matrix means the function is being applied element-wise
+- All vectors are column vectors unless otherwise specified.
+- The notation $g(x)$ for scalar function $g: \mathbb{R} \to \mathbb{R}$ and vector or matrix $x$ means the function is being applied element-wise.
 
 <hr>
 
@@ -18,11 +18,9 @@ Regarding notation:
 
 ### Setup
 
-We observe data $(y_1, x_1), \dots, (y_n, x_n)$ where $y_i \in \{1, 0\}$.
+We observe data $(y_1, x_1), \dots, (y_n, x_n)$ where $y_i \in \{0, 1\}$ and $x_i$ are vectors of length $m$.
 
 We assume the model $y \sim$ Bernoulli$\left(p(x) \right)$ where the mean response is $p(x) = \phi(w^T x)$.  
-
-$x$ is a vector of length $m$.
 
 $\phi(z) = \frac{1}{1 + e^{-z}}$ is the expit (aka logistic) function.
 
@@ -33,12 +31,10 @@ $\phi(z) = \frac{1}{1 + e^{-z}}$ is the expit (aka logistic) function.
 We estimate $w$ using the maximum likelihood approach.  In other words, our goal is to minimize the negative log-likelihood loss (aka cross-entropy loss):
 
 $$\begin{align}
-\mathcal{L}(w) &= - \log \prod_{i=1}^n p_i^{y_i} (1 - p_i)^{1-y_i}  \\
-&= - \sum_{i=1}^n \left[ y_i \log p_i + (1 - y_i) \log (1 - p_i) \right] \\
+\mathcal{L}(w) &= - \log \prod_{i=1}^n p(x_i)^{y_i} (1 - p(x_i))^{1-y_i}  \\
+&= - \sum_{i=1}^n \left[ y_i \log p(x_i) + (1 - y_i) \log (1 - p(x_i)) \right] \\
 &= - \sum_{i=1}^n \left[ y_i \log \phi(w^T x_i) + (1 - y_i) \log \left(1 - \phi(w^T x_i) \right) \right] 
 \end{align}$$
-
-Note that $p_i$ is shorthand for $p(x_i)$.
 
 <hr>
 
@@ -65,17 +61,17 @@ We think of our binary response as representing an observation's membership in o
 
 ### Setup
 
-Our response $y$ indicates membership in one of $K$ classes.  We'll use a one-hot encoding for the response, meaning each $y$ is a vector of length $K$ containing $0$'s except for the $k^{th}$ element which equals $1$ representing membership in the $k^{th}$ class.
+Our response $y$ indicates membership in one of $K$ classes.  We'll use a one-hot encoding for the response, meaning each $y$ is a vector of length $K$.  For example, $y = [1, 0, \dots, 0]^T$ denotes membership in the first class.
 
-Statistically, we assume $y \sim$ Categorical$\left(p_1(x), \dots, p_K(x)\right)$ where the mean response is $\left[p_1(x), \dots, p_K(x)\right]^T = \phi(w^T x)$.  
+Statistically, we assume $y \sim$ Categorical$\left(p_1(x), \dots, p_K(x)\right)$ where the mean response is $p(x) = \left[p_1(x), \dots, p_K(x)\right]^T = \phi(w^T x)$.  
 
 <br>
 
-Note that instead of a vector, $w$ is now an $m \times K$ matrix.  
+Now $w$ is an $m \times K$ matrix instead of a vector.
 
-And $\phi$ is now the softmax function which takes input vector $z$ of length $d$ and outputs vector:
+And $\phi$ is now the softmax function which takes input vector $z = [z_1, \dots, z_d]^T$ and outputs vector:
 
-$$\phi(z) = \frac{e^z}{\sum_j e^{z_j}} = \begin{pmatrix} e^{z_1} / \sum_j e^{z_j} \\ \vdots \\ e^{z_d} / \sum_j e^{z_j} \end{pmatrix}$$
+$$ \phi(z) = \begin{pmatrix} e^{z_1} / \sum_j e^{z_j} \\ \vdots \\ e^{z_d} / \sum_j e^{z_j} \end{pmatrix}$$
 
 <hr>
 
@@ -84,70 +80,71 @@ $$\phi(z) = \frac{e^z}{\sum_j e^{z_j}} = \begin{pmatrix} e^{z_1} / \sum_j e^{z_j
 We're still minimizing negative log-likelihood loss:
 
 $$\begin{align}
-\mathcal{L}(w) &= -\sum_{i=1}^n y_i^T \log p_i \\
+\mathcal{L}(w) &= -\sum_{i=1}^n y_i^T \log p(x_i) \\
 &= -\sum_{i=1}^n y_i^T \log \phi(w^T x_i) 
 \end{align}$$
 
 <hr>
 
-### Differentiation
+### Differentiation <a id="softmax-regression-differentiation"></a>
 
-To keep things simple, let's do this derivation for a single observation (hence, dropping the summation and index $i$ for now).  Also, let's establish some shorthand notation:  
+To keep things simple, let's do this derivation for a single observation (hence, dropping the summation and index $i$ for now).  Our simplified loss function is:
 
-- $p = \phi(z)$ is the output vector, and $p_k$ denotes its $k^{th}$ element
+$$\mathcal{L}(w) = -y^T \log \phi(w^T x)$$
+
+Also, let's establish some shorthand notation:  
+
+- $\phi = \phi(z)$ is the output vector, and $\phi_k$ denotes its $k^{th}$ element
 - $z = w^T x$ is the input vector to $\phi$, and $z_k$ denotes its $k^{th}$ element
 
 Then by chain rule:
 
-$$\frac{\partial \mathcal{L}(w)}{\partial w} = \frac{\partial \mathcal{L}}{\partial p} \frac{\partial p}{\partial z} \frac{\partial z}{\partial w}$$
+$$\frac{\partial \mathcal{L}(w)}{\partial w} = \frac{\partial \mathcal{L}}{\partial \phi} \frac{\partial \phi}{\partial z} \frac{\partial z}{\partial w}$$
 
 where:
 
-- $\frac{\partial \mathcal{L}}{\partial p}$ is a row vector of length $K$:
+- $\frac{\partial \mathcal{L}}{\partial \phi}$ is a row vector of length $K$:
 
-$$\left(-y \odot \frac{1}{p}\right)^T = \begin{pmatrix} -\frac{y_1}{p_1} & -\frac{y_2}{p_2} & \dots & -\frac{y_K}{p_K} \end{pmatrix} $$
+$$\left(-y \odot \frac{1}{\phi}\right)^T = \begin{pmatrix} -\frac{y_1}{\phi_1} & -\frac{y_2}{\phi_2} & \dots & -\frac{y_K}{\phi_K} \end{pmatrix} $$
 
-- $\frac{\partial p}{\partial z}$ is a $K \times K$ matrix (i.e. [derivative of softmax function](#derivative-of-the-softmax-function) $\phi$ with respect to input vector $z$):
+- $\frac{\partial \phi}{\partial z}$ is a $K \times K$ matrix (see Appendix for deriving the [derivative of the softmax function](#derivative-of-the-softmax-function)):
 
-$$\begin{pmatrix} p_1 (1 - p_1) & -p_1 p_2 & \dots & - p_1 p_K \\ 
-- p_2 p_1 & p_2 (1-p_2) & \dots & - p_2 p_K \\ 
+$$\begin{pmatrix} \phi_1 (1 - \phi_1) & -\phi_1 \phi_2 & \dots & - \phi_1 \phi_K \\ 
+- \phi_2 \phi_1 & \phi_2 (1-\phi_2) & \dots & - \phi_2 \phi_K \\ 
 \vdots  & \vdots & \ddots & \vdots \\ 
--p_K p_1 & -p_K p_2 & \dots & p_K (1-p_K) \end{pmatrix}$$
+-\phi_K \phi_1 & -\phi_K \phi_2 & \dots & \phi_K (1-\phi_K) \end{pmatrix}$$
 
-- $\frac{\partial z}{\partial w}$ is a $K \times m \times K$ tensor.  
-
-
+- $\frac{\partial z}{\partial w}$ is a $K \times m \times K$ tensor.  See Appendix for [derivation](#deriving-the-tensor-for-softmax-regression).  
 
 <br>
 
 Multiplication of the first two terms gives a row vector of length $K$:
 
 $$\begin{align}
-\frac{\partial \mathcal{L}}{\partial p}  \frac{\partial p}{\partial z}&= \begin{pmatrix} - y_1 (1-p_1) + \sum_{k \neq 1} y_k p_1 &  \dots & - y_K (1-p_K) + \sum_{k \neq K} y_k p_K \end{pmatrix} \\
-&= \begin{pmatrix} - y_1 + p_1 \sum_{k=1}^K y_k  &  \dots & - y_K + p_K \sum_{k=1}^K y_k  \end{pmatrix} \\
-&= \begin{pmatrix} p_1 - y_1  & \dots & p_K - y_K \end{pmatrix} \\ 
+\frac{\partial \mathcal{L}}{\partial \phi}  \frac{\partial \phi}{\partial z}&= \begin{pmatrix} - y_1 (1-\phi_1) + \sum_{k \neq 1} y_k \phi_1 &  \dots & - y_K (1-\phi_K) + \sum_{k \neq K} y_k \phi_K \end{pmatrix} \\
+&= \begin{pmatrix} - y_1 + \phi_1 \sum_{k=1}^K y_k  &  \dots & - y_K + \phi_K \sum_{k=1}^K y_k  \end{pmatrix} \\
+&= \begin{pmatrix} \phi_1 - y_1  & \dots & \phi_K - y_K \end{pmatrix} \\ 
 &= \left[\phi(w^T x) - y\right]^T
 \end{align}$$
 
-Then multiplying against the tensor term gives an $m \times K$ matrix:
+<br>
+
+Then multiplying the resulting row vector with the tensor term gives an $m \times K$ matrix:
 
 $$\begin{align}
-\frac{\partial \mathcal{L}}{\partial p} \frac{\partial p}{\partial z} \frac{\partial z}{\partial w} &= \left[\phi(w^T x) - y\right]^T \left[ \frac{\partial w^T x}{\partial w}\right] \\
+\frac{\partial \mathcal{L}}{\partial \phi} \frac{\partial \phi}{\partial z} \frac{\partial z}{\partial w} &= \left[\phi(w^T x) - y\right]^T \left[ \frac{\partial w^T x}{\partial w}\right] \\
 &= x \left[\phi(w^T x) - y\right]^T
 \end{align}$$
 
-See [Appendix](#derivative-of-vector-with-respect-to-matrix) for the more complicated stuff I've omitted, including:
-
-- derivations of $\frac{\partial p}{\partial z}$ and $\frac{\partial z}{\partial w}$
-- explanation why the tensor multiplication works out so nicely (hence why I've omitted the actual form of the tensor above; it's not needed)
+It turns out the tensor multiplication works out to this simple form.  See Appendix for [details](#showing-steps-in-vector-tensor-multiplication).
 
 <br>
 
-Finally, putting everything back in terms of $n$ observations (and pulling the negative term out of the summation), we have the derivative of $\mathcal{L}(w)$ in terms of $w$:
+Finally, putting everything back in terms of $n$ observations, we have the derivative of $\mathcal{L}(w)$ with respect to $w$:
 
 $$\frac{\partial \mathcal{L}(w)}{\partial w} = -\sum_{i=1}^n x_i \left[y_i - \phi(w^T x_i) \right]^T$$
 
-which is an $m \times n$ Jacobian matrix. 
+which is an $m \times K$ matrix. 
 
 This looks very similar to the derivative in the logistic regression setting (which is honestly kind of anti-climactic after all that work).  In fact, softmax regression for $K = 2$ is equivalent to logistic regression.
 
@@ -158,7 +155,7 @@ This looks very similar to the derivative in the logistic regression setting (wh
 
 ### Setup
 
-The neural network framework still assumes $y \sim$ Categorical$\left(p_1(x), \dots, p_K(x)\right)$ but now with a more complicated form for the mean response:
+The neural network framework still assumes $y \sim$ Categorical$\left(p_1(x), \dots, p_K(x)\right)$ but now with a recursively-defined mean response:
 
 $$\begin{align}
 \left[p_1(x), \dots, p_K(x)\right]^T = h^{(L)} &= \phi_L \left(z^{(L)} \right) \\
@@ -193,9 +190,13 @@ $$ \mathcal{L}(w_{1:L}) = - \sum_{i=1}^n y_i^T \log h_i^{(L)} $$
 
 ### Differentiation
 
-As it turns out, differentiation for neural networks only differs from differentiation for softmax regression by how many terms appear in the chain rule.
+As it turns out, differentiation for neural networks looks similar to differentiation for softmax regression.
 
-For simplicity, assume a single observation.  Then:
+For simplicity, let's again assume a single observation, so the loss function is:
+
+$$ \mathcal{L}(w_{1:L}) = - y^T \log h^{(L)} $$
+
+Then:
 
 $$\begin{align} \frac{\partial \mathcal{L}(w_{1:L})}{\partial w_L} &= \underbrace{\frac{\partial \mathcal{L}}{\partial h^{(L)}} \frac{\partial h^{(L)}}{\partial z^{(L)}}}_{\delta^{(L)}} \frac{\partial z^{(L)}}{\partial w_L} \\
 \frac{\partial \mathcal{L}(w_{1:L})}{\partial w_{L-1}} &= \underbrace{\frac{\partial \mathcal{L}}{\partial h^{(L)}} \frac{\partial h^{(L)}}{\partial z^{(L)}} \frac{\partial z^{(L)}}{\partial h^{(L-1)}} \frac{\partial h^{(L-1)}}{\partial z^{(L-1)}}}_{\delta^{(L-1)}} \frac{\partial z^{(L-1)}}{\partial w_{L-1}} \\ 
@@ -219,7 +220,7 @@ for $l = 1, \dots, L$.
 
 <br>
 
-Notice that $\delta^{(l)} = \frac{\partial \mathcal{L}}{\partial z^{(l)}} = \frac{\partial \mathcal{L}}{\partial h^{(L)}}  \frac{\partial h^{(L)}}{\partial z^{(L)}} \cdots  \frac{\partial h^{(l)}}{\partial z^{(l)}} $ is a row vector, meaning we can use the previous trick to simplify multiplication with the tensor $\frac{\partial z^{(l)}}{\partial w_l}$:
+Notice that $\delta^{(l)} = \frac{\partial \mathcal{L}}{\partial z^{(l)}} = \frac{\partial \mathcal{L}}{\partial h^{(L)}}  \frac{\partial h^{(L)}}{\partial z^{(L)}} \cdots  \frac{\partial h^{(l)}}{\partial z^{(l)}} $ is a row vector, and $\frac{\partial z^{(l)}}{\partial w_l}$ is a tensor of a familiar form.  Then using what we learned from softmax regression:
 
 $$\delta^{(l)}\frac{\partial z^{(l)}}{\partial w_l} = h^{(l-1)} \delta^{(l)}$$
 
@@ -249,7 +250,7 @@ The backpropagation algorithm is simply an efficient way for computing the deriv
 
 <br>
 
-The $\delta^{(l)}$ computations comprise most of the heavy-lifting since $\frac{\partial h^{(l)}}{\partial z^{(l)}} = \phi'(z^{(l)})$ and $\frac{\partial z^{(l)}}{\partial h^{(l-1)}} = w_l^T$ can be large matrices.  There's not much we can do about the latter, but see the [Appendix](#faster-computation-of-delta-terms) for situations to speed up multiplication with the former.
+The $\delta^{(l)}$ computations comprise most of the heavy-lifting since: $\frac{\partial h^{(l)}}{\partial z^{(l)}} = \phi'(z^{(l)})$ and $\frac{\partial z^{(l)}}{\partial h^{(l-1)}} = w_l^T$ can be large matrices.  There's not much we can do about the latter term, but see the [Appendix](#faster-computation-of-delta-terms) for ways to speed up multiplication involving the former term.
 
 <hr>
 
@@ -257,7 +258,7 @@ The $\delta^{(l)}$ computations comprise most of the heavy-lifting since $\frac{
 
 ### Derivative of the softmax function
 
-Since the softmax function is $\mathbb{R}^d \to \mathbb{R}^d$,  its derivative is a Jacobian matrix:
+Since the softmax function is $\phi: \mathbb{R}^d \to \mathbb{R}^d$,  its derivative is a Jacobian matrix:
 
 $$\phi'(z) = \begin{pmatrix}
 \frac{\partial \phi(z)_1}{z_1} & \frac{\partial \phi(z)_1}{z_2} & \dots & \frac{\partial \phi(z)_1}{z_d} \\
@@ -266,9 +267,9 @@ $$\phi'(z) = \begin{pmatrix}
 \frac{\partial \phi(z)_d}{z_1} & \frac{\partial \phi(z)_d}{z_2} & \dots & \frac{\partial \phi(z)_d}{z_d} \\
 \end{pmatrix}$$
 
-We'll index the rows by $i$ and columns by $j$.
+Let's derive each entry in this matrix.  We'll index the rows by $i$ and columns by $j$.
 
-For $i = j$, by quotient rule:
+For $i = j$ entries, by quotient rule:
 
 $$\begin{align}
 \frac{\partial \phi(z)_i}{\partial z_i} &= \frac{e^{z_i} \sum_k e^{z_k} - e^{z_i} e^{z_i}}{ \sum_k e^{z_k} \sum_k e^{z_k} } \\
@@ -276,7 +277,7 @@ $$\begin{align}
 &= \phi(z)_i \left( 1 - \phi(z)_i \right)
 \end{align}$$
 
-And for $i \neq j$, by quotient rule:
+And for $i \neq j$ entries, by quotient rule:
 
 $$\begin{align}
 \frac{\partial \phi(z)_i}{\partial z_j} &= \frac{0 \sum_k e^{z_k} - e^{z_i} e^{z_j}}{ \sum_k e^{z_k} \sum_k e^{z_k} } \\
@@ -284,44 +285,45 @@ $$\begin{align}
 &= - \phi(z)_i \phi(z)_j
 \end{align}$$
 
-### Derivative of vector with respect to matrix
+### Deriving the tensor for softmax regression
 
-Let $w$ be an $m \times n$ matrix.  Let $x$ be a vector of length $m$.
+This section pertains to deriving the form of the tensor mentioned in [this section](#softmax-regression-differentiation).
 
-Then:
-
-$$\frac{\partial w^T x}{\partial w} = 
+$$\frac{\partial z}{\partial w} = \frac{\partial w^T x}{\partial w} = 
 \begin{pmatrix} 
-\frac{\partial (w^T x)_1}{\partial w} \\ \frac{\partial (w^T x)_2}{\partial w} \\ \dots \\ \frac{\partial (w^T x)_n}{\partial w} 
+\frac{\partial (w^T x)_1}{\partial w} \\ \frac{\partial (w^T x)_2}{\partial w} \\ \dots \\ \frac{\partial (w^T x)_K}{\partial w} 
 \end{pmatrix} $$
 
-is a rank-3 tensor of dimension $n \times m \times n$ where:
+is a rank-3 tensor of dimension $K \times m \times K$ where:
 
-$$\frac{\partial (w^T x)_1 }{\partial w} = \begin{pmatrix} x_1 & 0 & \dots & 0 \\ x_2 & 0 & \dots & 0 \\ \vdots & \vdots & \ddots & \vdots \\ x_m & 0 & \dots & 0 \end{pmatrix} $$
+$$\begin{align}
+\frac{\partial (w^T x)_1 }{\partial w} &= \begin{pmatrix}\frac{\partial \sum w_{j1} x_j}{\partial w_{11}} & \frac{\partial \sum w_{j1} x_j}{\partial w_{12}} & \dots & \frac{\partial \sum w_{j1} x_j}{\partial w_{1K}} \\ \frac{\partial \sum w_{j1} x_j}{\partial w_{21}} & \frac{\partial \sum w_{j1} x_j}{\partial w_{22}} & \dots & \frac{\partial \sum w_{j1} x_j}{\partial w_{2K}} \\ \vdots & \vdots & \ddots \vdots \\ \frac{\partial \sum w_{j1} x_j}{\partial w_{m1}} & \frac{\partial \sum w_{j1} x_j}{\partial w_{m2}} & \dots & \frac{\partial \sum w_{j1} x_j}{\partial w_{mK}} \end{pmatrix} \\
+&= \begin{pmatrix} x_1 & 0 & \dots & 0 \\ x_2 & 0 & \dots & 0 \\ \vdots & \vdots & \ddots & \vdots \\ x_m & 0 & \dots & 0 \end{pmatrix}
+\end{align}$$
 
 $$\frac{\partial (w^T x)_2 }{\partial w} = \begin{pmatrix} 0 & x_1 & 0 & \dots & 0 \\ 0 & x_2 & 0 & \dots & 0 \\ \vdots & \vdots & \vdots & \ddots & \vdots \\ 0 & x_m & 0 & \dots & 0 \end{pmatrix} $$
 
 $$\vdots$$
 
-$$\frac{\partial (w^T x)_n }{\partial w} = \begin{pmatrix} 0 & \dots & 0 & x_1 \\ 0 & \dots & 0 & x_2 \\ \vdots & \vdots & \ddots & \vdots \\ 0 & \dots & 0 & x_m \end{pmatrix} $$
+$$\frac{\partial (w^T x)_K }{\partial w} = \begin{pmatrix} 0 & \dots & 0 & x_1 \\ 0 & \dots & 0 & x_2 \\ \vdots & \vdots & \ddots & \vdots \\ 0 & \dots & 0 & x_m \end{pmatrix} $$
 
-### Left multiplying (above) tensor with a vector
+### Showing steps in vector-tensor multiplication
 
-Continued from above.
+This section pertains to showing details for the tensor multiplication step mentioned in [this section](#softmax-regression-differentiation).
 
-Let $a$ be a vector of length $n$.  Then:
+Let $a$ be a vector of length $K$.  Then:
 
 $$\begin{align}
-a^T \left[\frac{\partial w^T x}{\partial w}\right] &=  \begin{pmatrix} a_1 & a_2 & \dots & a_n \end{pmatrix}\begin{pmatrix} 
-\frac{\partial (w^T x)_1}{\partial w} \\ \frac{\partial (w^T x)_2}{\partial w} \\ \dots \\ \frac{\partial (w^T x)_n}{\partial w} 
+a^T \left[\frac{\partial w^T x}{\partial w}\right] &=  \begin{pmatrix} a_1 & a_2 & \dots & a_K \end{pmatrix}\begin{pmatrix} 
+\frac{\partial (w^T x)_1}{\partial w} \\ \frac{\partial (w^T x)_2}{\partial w} \\ \dots \\ \frac{\partial (w^T x)_K}{\partial w} 
 \end{pmatrix} \\
-&= \sum_{j=1}^n a_j \frac{\partial (w^T x)_j }{\partial w} \\
-&= a_1 \begin{pmatrix} x_1 & 0 & \dots & 0 \\ x_2 & 0 & \dots & 0 \\ \vdots & \vdots & \ddots & \vdots \\ x_m & 0 & \dots & 0 \end{pmatrix} + \dots + a_n \begin{pmatrix} 0 & \dots & 0 & x_1 \\ 0 & \dots & 0 & x_2 \\ \vdots & \vdots & \ddots & \vdots \\ 0 & \dots & 0 & x_m \end{pmatrix} \\
-&= \begin{pmatrix} a_1 x_1 & a_2 x_1 & \dots & a_n x_1 \\ a_1 x_2 & a_2 x_2 & \dots & a_n x_2 \\ \vdots & \vdots & \ddots & \vdots \\ a_1 x_m & a_2 x_m & \dots & a_n x_m \end{pmatrix} \\
+&= \sum_{j=1}^K a_j \frac{\partial (w^T x)_j }{\partial w} \\
+&= a_1 \begin{pmatrix} x_1 & 0 & \dots & 0 \\ x_2 & 0 & \dots & 0 \\ \vdots & \vdots & \ddots & \vdots \\ x_m & 0 & \dots & 0 \end{pmatrix} + \dots + a_K \begin{pmatrix} 0 & \dots & 0 & x_1 \\ 0 & \dots & 0 & x_2 \\ \vdots & \vdots & \ddots & \vdots \\ 0 & \dots & 0 & x_m \end{pmatrix} \\
+&= \begin{pmatrix} a_1 x_1 & a_2 x_1 & \dots & a_K x_1 \\ a_1 x_2 & a_2 x_2 & \dots & a_K x_2 \\ \vdots & \vdots & \ddots & \vdots \\ a_1 x_m & a_2 x_m & \dots & a_K x_m \end{pmatrix} \\
 &= x a^T
 \end{align}$$
 
-Technically, the result is a $1 \times m \times n$ tensor, but we can effectively drop the first dimension and just treat the result as an $m \times n$ matrix.
+Technically, the result is a $1 \times m \times K$ tensor, but we can effectively drop the first dimension and just treat the result as an $m \times K$ matrix.
 
 ### Derivatives of other activation functions
 
@@ -393,17 +395,17 @@ Everything else remains the same.
 
 Maximum likelihood tends to overfit and we often include a penalty term in the loss function to guard against this.  For example:
 
-$$\mathcal{L}(w_{1:L}) = \sum_{i=1}^n y^T \log h_i^{(L)} + \frac{\lambda}{2} \vert \vert w \vert \vert_2^2$$
+$$\mathcal{L}(w_{1:L}) = \sum_{i=1}^n y^T \log h_i^{(L)} + \frac{\lambda}{2} \Vert  w \Vert_2^2$$
 
-where $\lambda > 0$ and $\vert \vert w \vert \vert_2^2$ denotes the sum of squared $w_{i,j}^{(l)}$ (except bias terms).
+where $\lambda > 0$ and $\Vert w \Vert_2^2$ denotes the sum of squared $w_{i,j}^{(l)}$ (except bias terms).
 
 Then:
 
-$$\frac{\partial \mathcal{L}(w_{1:L})}{\partial w_l} = \frac{\partial \sum_{i=1}^n y^T \log h_i^{(L)}}{\partial w_l} + \frac{\lambda}{2} \frac{\partial \vert \vert w \vert \vert_2^2}{\partial w_l}$$
+$$\frac{\partial \mathcal{L}(w_{1:L})}{\partial w_l} = \frac{\partial \sum_{i=1}^n y^T \log h_i^{(L)}}{\partial w_l} + \frac{\lambda}{2} \frac{\partial \Vert w \Vert_2^2}{\partial w_l}$$
 
 for which the former term we've already derived.  The latter term is:
 
-$$\frac{\partial \vert \vert w \vert \vert_2^2}{\partial w_l} = 2 w_l$$
+$$\frac{\partial \Vert w \Vert_2^2}{\partial w_l} = 2 w_l$$
 
 which is an $m_{l-1} \times m_l$ matrix.
 
