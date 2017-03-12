@@ -1,12 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><generator uri="http://jekyllrb.com" version="3.1.6">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2017-03-04T00:51:51-08:00</updated><id>/</id><title>Kyle Lo</title><subtitle>Statistics and stuff</subtitle><author><name>Kyle Lo</name><email>kyleclo@uw.edu</email></author><entry><title>Deriving the backpropagation algorithm</title><link href="/deriving-the-backpropagation-algorithm/" rel="alternate" type="text/html" title="Deriving the backpropagation algorithm" /><published>2016-12-28T00:00:00-08:00</published><updated>2016-12-28T00:00:00-08:00</updated><id>/deriving-the-backpropagation-algorithm</id><content type="html" xml:base="/deriving-the-backpropagation-algorithm/">&lt;p&gt;Here are some notes containing step-by-step derivations of the backpropagation algorithm for neural networks.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><generator uri="http://jekyllrb.com" version="3.1.6">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2017-03-12T01:21:01-08:00</updated><id>/</id><title>Kyle Lo</title><subtitle>Statistics and stuff</subtitle><author><name>Kyle Lo</name><email>kyleclo@uw.edu</email></author><entry><title>Deriving the backpropagation algorithm</title><link href="/deriving-the-backpropagation-algorithm/" rel="alternate" type="text/html" title="Deriving the backpropagation algorithm" /><published>2016-12-28T00:00:00-08:00</published><updated>2016-12-28T00:00:00-08:00</updated><id>/deriving-the-backpropagation-algorithm</id><content type="html" xml:base="/deriving-the-backpropagation-algorithm/">&lt;p&gt;Here are some notes containing step-by-step derivations of the backpropagation algorithm for neural networks.&lt;/p&gt;
 
-&lt;p&gt;This post assumes the reader is already familiar with neural networks and is comfortable with calculus and linear algebra; this content serves more as a reference than as an introduction to the subject.&lt;/p&gt;
+&lt;p&gt;This post serves more as a reference than as an introduction to the subject.  It assumes the reader is already familiar with neural networks and is comfortable with differentiation and matrix algebra.&lt;/p&gt;
 
 &lt;p&gt;Regarding notation:&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;All vectors are column vectors unless otherwise specified&lt;/li&gt;
-  &lt;li&gt;The notation $g(x)$ for $g: \mathbb{R} \to \mathbb{R}$ and $x$ is a vector or matrix means the function is being applied element-wise&lt;/li&gt;
+  &lt;li&gt;All vectors are column vectors unless otherwise specified.&lt;/li&gt;
+  &lt;li&gt;The notation $g(x)$ for scalar function $g: \mathbb{R} \to \mathbb{R}$ and vector or matrix $x$ means the function is being applied element-wise.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;hr /&gt;
@@ -15,11 +15,9 @@
 
 &lt;h3 id=&quot;setup&quot;&gt;Setup&lt;/h3&gt;
 
-&lt;p&gt;We observe data $(y_1, x_1), \dots, (y_n, x_n)$ where $y_i \in {1, 0}$.&lt;/p&gt;
+&lt;p&gt;We observe data $(y_1, x_1), \dots, (y_n, x_n)$ where $y_i \in {0, 1}$ and $x_i$ are vectors of length $m$.&lt;/p&gt;
 
 &lt;p&gt;We assume the model $y \sim$ Bernoulli$\left(p(x) \right)$ where the mean response is $p(x) = \phi(w^T x)$.&lt;/p&gt;
-
-&lt;p&gt;$x$ is a vector of length $m$.&lt;/p&gt;
 
 &lt;p&gt;$\phi(z) = \frac{1}{1 + e^{-z}}$ is the expit (aka logistic) function.&lt;/p&gt;
 
@@ -31,12 +29,10 @@
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
 \begin{align}
-\mathcal{L}(w) &amp;= - \log \prod_{i=1}^n p_i^{y_i} (1 - p_i)^{1-y_i}  \\
-&amp;= - \sum_{i=1}^n \left[ y_i \log p_i + (1 - y_i) \log (1 - p_i) \right] \\
+\mathcal{L}(w) &amp;= - \log \prod_{i=1}^n p(x_i)^{y_i} (1 - p(x_i))^{1-y_i}  \\
+&amp;= - \sum_{i=1}^n \left[ y_i \log p(x_i) + (1 - y_i) \log (1 - p(x_i)) \right] \\
 &amp;= - \sum_{i=1}^n \left[ y_i \log \phi(w^T x_i) + (1 - y_i) \log \left(1 - \phi(w^T x_i) \right) \right] 
 \end{align} %]]&gt;&lt;/script&gt;
-
-&lt;p&gt;Note that $p_i$ is shorthand for $p(x_i)$.&lt;/p&gt;
 
 &lt;hr /&gt;
 
@@ -64,17 +60,17 @@
 
 &lt;h3 id=&quot;setup-1&quot;&gt;Setup&lt;/h3&gt;
 
-&lt;p&gt;Our response $y$ indicates membership in one of $K$ classes.  We’ll use a one-hot encoding for the response, meaning each $y$ is a vector of length $K$ containing $0$’s except for the $k^{th}$ element which equals $1$ representing membership in the $k^{th}$ class.&lt;/p&gt;
+&lt;p&gt;Our response $y$ indicates membership in one of $K$ classes.  We’ll use a one-hot encoding for the response, meaning each $y$ is a vector of length $K$.  For example, $y = [1, 0, \dots, 0]^T$ denotes membership in the first class.&lt;/p&gt;
 
-&lt;p&gt;Statistically, we assume $y \sim$ Categorical$\left(p_1(x), \dots, p_K(x)\right)$ where the mean response is $\left[p_1(x), \dots, p_K(x)\right]^T = \phi(w^T x)$.&lt;/p&gt;
+&lt;p&gt;Statistically, we assume $y \sim$ Categorical$\left(p_1(x), \dots, p_K(x)\right)$ where the mean response is $p(x) = \left[p_1(x), \dots, p_K(x)\right]^T = \phi(w^T x)$.&lt;/p&gt;
 
 &lt;p&gt;&lt;br /&gt;&lt;/p&gt;
 
-&lt;p&gt;Note that instead of a vector, $w$ is now an $m \times K$ matrix.&lt;/p&gt;
+&lt;p&gt;Now $w$ is an $m \times K$ matrix instead of a vector.&lt;/p&gt;
 
-&lt;p&gt;And $\phi$ is now the softmax function which takes input vector $z$ of length $d$ and outputs vector:&lt;/p&gt;
+&lt;p&gt;And $\phi$ is now the softmax function which takes input vector $z = [z_1, \dots, z_d]^T$ and outputs vector:&lt;/p&gt;
 
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;\phi(z) = \frac{e^z}{\sum_j e^{z_j}} = \begin{pmatrix} e^{z_1} / \sum_j e^{z_j} \\ \vdots \\ e^{z_d} / \sum_j e^{z_j} \end{pmatrix}&lt;/script&gt;
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\phi(z) = \begin{pmatrix} e^{z_1} / \sum_j e^{z_j} \\ \vdots \\ e^{z_d} / \sum_j e^{z_j} \end{pmatrix}&lt;/script&gt;
 
 &lt;hr /&gt;
 
@@ -84,46 +80,50 @@
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
 \begin{align}
-\mathcal{L}(w) &amp;= -\sum_{i=1}^n y_i^T \log p_i \\
+\mathcal{L}(w) &amp;= -\sum_{i=1}^n y_i^T \log p(x_i) \\
 &amp;= -\sum_{i=1}^n y_i^T \log \phi(w^T x_i) 
 \end{align} %]]&gt;&lt;/script&gt;
 
 &lt;hr /&gt;
 
-&lt;h3 id=&quot;differentiation-1&quot;&gt;Differentiation&lt;/h3&gt;
+&lt;h3 id=&quot;differentiation-a-idsoftmax-regression-differentiationa&quot;&gt;Differentiation &lt;a id=&quot;softmax-regression-differentiation&quot;&gt;&lt;/a&gt;&lt;/h3&gt;
 
-&lt;p&gt;To keep things simple, let’s do this derivation for a single observation (hence, dropping the summation and index $i$ for now).  Also, let’s establish some shorthand notation:&lt;/p&gt;
+&lt;p&gt;To keep things simple, let’s do this derivation for a single observation (hence, dropping the summation and index $i$ for now).  Our simplified loss function is:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathcal{L}(w) = -y^T \log \phi(w^T x)&lt;/script&gt;
+
+&lt;p&gt;Also, let’s establish some shorthand notation:&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;$p = \phi(z)$ is the output vector, and $p_k$ denotes its $k^{th}$ element&lt;/li&gt;
+  &lt;li&gt;$\phi = \phi(z)$ is the output vector, and $\phi_k$ denotes its $k^{th}$ element&lt;/li&gt;
   &lt;li&gt;$z = w^T x$ is the input vector to $\phi$, and $z_k$ denotes its $k^{th}$ element&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;Then by chain rule:&lt;/p&gt;
 
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \mathcal{L}(w)}{\partial w} = \frac{\partial \mathcal{L}}{\partial p} \frac{\partial p}{\partial z} \frac{\partial z}{\partial w}&lt;/script&gt;
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \mathcal{L}(w)}{\partial w} = \frac{\partial \mathcal{L}}{\partial \phi} \frac{\partial \phi}{\partial z} \frac{\partial z}{\partial w}&lt;/script&gt;
 
 &lt;p&gt;where:&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;$\frac{\partial \mathcal{L}}{\partial p}$ is a row vector of length $K$:&lt;/li&gt;
+  &lt;li&gt;$\frac{\partial \mathcal{L}}{\partial \phi}$ is a row vector of length $K$:&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
-\left(-y \odot \frac{1}{p}\right)^T = \begin{pmatrix} -\frac{y_1}{p_1} &amp; -\frac{y_2}{p_2} &amp; \dots &amp; -\frac{y_K}{p_K} \end{pmatrix} %]]&gt;&lt;/script&gt;
+\left(-y \odot \frac{1}{\phi}\right)^T = \begin{pmatrix} -\frac{y_1}{\phi_1} &amp; -\frac{y_2}{\phi_2} &amp; \dots &amp; -\frac{y_K}{\phi_K} \end{pmatrix} %]]&gt;&lt;/script&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;$\frac{\partial p}{\partial z}$ is a $K \times K$ matrix (i.e. &lt;a href=&quot;#derivative-of-the-softmax-function&quot;&gt;derivative of softmax function&lt;/a&gt; $\phi$ with respect to input vector $z$):&lt;/li&gt;
+  &lt;li&gt;$\frac{\partial \phi}{\partial z}$ is a $K \times K$ matrix (see Appendix for deriving the &lt;a href=&quot;#derivative-of-the-softmax-function&quot;&gt;derivative of the softmax function&lt;/a&gt;):&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
-\begin{pmatrix} p_1 (1 - p_1) &amp; -p_1 p_2 &amp; \dots &amp; - p_1 p_K \\ 
-- p_2 p_1 &amp; p_2 (1-p_2) &amp; \dots &amp; - p_2 p_K \\ 
+\begin{pmatrix} \phi_1 (1 - \phi_1) &amp; -\phi_1 \phi_2 &amp; \dots &amp; - \phi_1 \phi_K \\ 
+- \phi_2 \phi_1 &amp; \phi_2 (1-\phi_2) &amp; \dots &amp; - \phi_2 \phi_K \\ 
 \vdots  &amp; \vdots &amp; \ddots &amp; \vdots \\ 
--p_K p_1 &amp; -p_K p_2 &amp; \dots &amp; p_K (1-p_K) \end{pmatrix} %]]&gt;&lt;/script&gt;
+-\phi_K \phi_1 &amp; -\phi_K \phi_2 &amp; \dots &amp; \phi_K (1-\phi_K) \end{pmatrix} %]]&gt;&lt;/script&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;$\frac{\partial z}{\partial w}$ is a $K \times m \times K$ tensor.&lt;/li&gt;
+  &lt;li&gt;$\frac{\partial z}{\partial w}$ is a $K \times m \times K$ tensor.  See Appendix for &lt;a href=&quot;#deriving-the-tensor-for-softmax-regression&quot;&gt;derivation&lt;/a&gt;.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;&lt;br /&gt;&lt;/p&gt;
@@ -132,34 +132,31 @@
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
 \begin{align}
-\frac{\partial \mathcal{L}}{\partial p}  \frac{\partial p}{\partial z}&amp;= \begin{pmatrix} - y_1 (1-p_1) + \sum_{k \neq 1} y_k p_1 &amp;  \dots &amp; - y_K (1-p_K) + \sum_{k \neq K} y_k p_K \end{pmatrix} \\
-&amp;= \begin{pmatrix} - y_1 + p_1 \sum_{k=1}^K y_k  &amp;  \dots &amp; - y_K + p_K \sum_{k=1}^K y_k  \end{pmatrix} \\
-&amp;= \begin{pmatrix} p_1 - y_1  &amp; \dots &amp; p_K - y_K \end{pmatrix} \\ 
+\frac{\partial \mathcal{L}}{\partial \phi}  \frac{\partial \phi}{\partial z}&amp;= \begin{pmatrix} - y_1 (1-\phi_1) + \sum_{k \neq 1} y_k \phi_1 &amp;  \dots &amp; - y_K (1-\phi_K) + \sum_{k \neq K} y_k \phi_K \end{pmatrix} \\
+&amp;= \begin{pmatrix} - y_1 + \phi_1 \sum_{k=1}^K y_k  &amp;  \dots &amp; - y_K + \phi_K \sum_{k=1}^K y_k  \end{pmatrix} \\
+&amp;= \begin{pmatrix} \phi_1 - y_1  &amp; \dots &amp; \phi_K - y_K \end{pmatrix} \\ 
 &amp;= \left[\phi(w^T x) - y\right]^T
 \end{align} %]]&gt;&lt;/script&gt;
 
-&lt;p&gt;Then multiplying against the tensor term gives an $m \times K$ matrix:&lt;/p&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;Then multiplying the resulting row vector with the tensor term gives an $m \times K$ matrix:&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
 \begin{align}
-\frac{\partial \mathcal{L}}{\partial p} \frac{\partial p}{\partial z} \frac{\partial z}{\partial w} &amp;= \left[\phi(w^T x) - y\right]^T \left[ \frac{\partial w^T x}{\partial w}\right] \\
+\frac{\partial \mathcal{L}}{\partial \phi} \frac{\partial \phi}{\partial z} \frac{\partial z}{\partial w} &amp;= \left[\phi(w^T x) - y\right]^T \left[ \frac{\partial w^T x}{\partial w}\right] \\
 &amp;= x \left[\phi(w^T x) - y\right]^T
 \end{align} %]]&gt;&lt;/script&gt;
 
-&lt;p&gt;See &lt;a href=&quot;#derivative-of-vector-with-respect-to-matrix&quot;&gt;Appendix&lt;/a&gt; for the more complicated stuff I’ve omitted, including:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;derivations of $\frac{\partial p}{\partial z}$ and $\frac{\partial z}{\partial w}$&lt;/li&gt;
-  &lt;li&gt;explanation why the tensor multiplication works out so nicely (hence why I’ve omitted the actual form of the tensor above; it’s not needed)&lt;/li&gt;
-&lt;/ul&gt;
+&lt;p&gt;It turns out the tensor multiplication works out to this simple form.  See Appendix for &lt;a href=&quot;#showing-steps-in-vector-tensor-multiplication&quot;&gt;details&lt;/a&gt;.&lt;/p&gt;
 
 &lt;p&gt;&lt;br /&gt;&lt;/p&gt;
 
-&lt;p&gt;Finally, putting everything back in terms of $n$ observations (and pulling the negative term out of the summation), we have the derivative of $\mathcal{L}(w)$ in terms of $w$:&lt;/p&gt;
+&lt;p&gt;Finally, putting everything back in terms of $n$ observations, we have the derivative of $\mathcal{L}(w)$ with respect to $w$:&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \mathcal{L}(w)}{\partial w} = -\sum_{i=1}^n x_i \left[y_i - \phi(w^T x_i) \right]^T&lt;/script&gt;
 
-&lt;p&gt;which is an $m \times n$ Jacobian matrix.&lt;/p&gt;
+&lt;p&gt;which is an $m \times K$ matrix.&lt;/p&gt;
 
 &lt;p&gt;This looks very similar to the derivative in the logistic regression setting (which is honestly kind of anti-climactic after all that work).  In fact, softmax regression for $K = 2$ is equivalent to logistic regression.&lt;/p&gt;
 
@@ -169,7 +166,7 @@
 
 &lt;h3 id=&quot;setup-2&quot;&gt;Setup&lt;/h3&gt;
 
-&lt;p&gt;The neural network framework still assumes $y \sim$ Categorical$\left(p_1(x), \dots, p_K(x)\right)$ but now with a more complicated form for the mean response:&lt;/p&gt;
+&lt;p&gt;The neural network framework still assumes $y \sim$ Categorical$\left(p_1(x), \dots, p_K(x)\right)$ but now with a recursively-defined mean response:&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
 \begin{align}
@@ -213,11 +210,15 @@ h^{(0)} &amp;= x
 
 &lt;hr /&gt;
 
-&lt;h3 id=&quot;differentiation-2&quot;&gt;Differentiation&lt;/h3&gt;
+&lt;h3 id=&quot;differentiation-1&quot;&gt;Differentiation&lt;/h3&gt;
 
-&lt;p&gt;As it turns out, differentiation for neural networks only differs from differentiation for softmax regression by how many terms appear in the chain rule.&lt;/p&gt;
+&lt;p&gt;As it turns out, differentiation for neural networks looks similar to differentiation for softmax regression.&lt;/p&gt;
 
-&lt;p&gt;For simplicity, assume a single observation.  Then:&lt;/p&gt;
+&lt;p&gt;For simplicity, let’s again assume a single observation, so the loss function is:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathcal{L}(w_{1:L}) = - y^T \log h^{(L)}&lt;/script&gt;
+
+&lt;p&gt;Then:&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
 \begin{align} \frac{\partial \mathcal{L}(w_{1:L})}{\partial w_L} &amp;= \underbrace{\frac{\partial \mathcal{L}}{\partial h^{(L)}} \frac{\partial h^{(L)}}{\partial z^{(L)}}}_{\delta^{(L)}} \frac{\partial z^{(L)}}{\partial w_L} \\
@@ -251,7 +252,7 @@ h^{(0)} &amp;= x
 
 &lt;p&gt;&lt;br /&gt;&lt;/p&gt;
 
-&lt;p&gt;Notice that $\delta^{(l)} = \frac{\partial \mathcal{L}}{\partial z^{(l)}} = \frac{\partial \mathcal{L}}{\partial h^{(L)}}  \frac{\partial h^{(L)}}{\partial z^{(L)}} \cdots  \frac{\partial h^{(l)}}{\partial z^{(l)}} $ is a row vector, meaning we can use the previous trick to simplify multiplication with the tensor $\frac{\partial z^{(l)}}{\partial w_l}$:&lt;/p&gt;
+&lt;p&gt;Notice that $\delta^{(l)} = \frac{\partial \mathcal{L}}{\partial z^{(l)}} = \frac{\partial \mathcal{L}}{\partial h^{(L)}}  \frac{\partial h^{(L)}}{\partial z^{(L)}} \cdots  \frac{\partial h^{(l)}}{\partial z^{(l)}} $ is a row vector, and $\frac{\partial z^{(l)}}{\partial w_l}$ is a tensor of a familiar form.  Then using what we learned from softmax regression:&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;\delta^{(l)}\frac{\partial z^{(l)}}{\partial w_l} = h^{(l-1)} \delta^{(l)}&lt;/script&gt;
 
@@ -287,7 +288,7 @@ h^{(0)} &amp;= x
 
 &lt;p&gt;&lt;br /&gt;&lt;/p&gt;
 
-&lt;p&gt;The $\delta^{(l)}$ computations comprise most of the heavy-lifting since $\frac{\partial h^{(l)}}{\partial z^{(l)}} = \phi’(z^{(l)})$ and $\frac{\partial z^{(l)}}{\partial h^{(l-1)}} = w_l^T$ can be large matrices.  There’s not much we can do about the latter, but see the &lt;a href=&quot;#faster-computation-of-delta-terms&quot;&gt;Appendix&lt;/a&gt; for situations to speed up multiplication with the former.&lt;/p&gt;
+&lt;p&gt;The $\delta^{(l)}$ computations comprise most of the heavy-lifting since: $\frac{\partial h^{(l)}}{\partial z^{(l)}} = \phi’(z^{(l)})$ and $\frac{\partial z^{(l)}}{\partial h^{(l-1)}} = w_l^T$ can be large matrices.  There’s not much we can do about the latter term, but see the &lt;a href=&quot;#faster-computation-of-delta-terms&quot;&gt;Appendix&lt;/a&gt; for ways to speed up multiplication involving the former term.&lt;/p&gt;
 
 &lt;hr /&gt;
 
@@ -295,7 +296,7 @@ h^{(0)} &amp;= x
 
 &lt;h3 id=&quot;derivative-of-the-softmax-function&quot;&gt;Derivative of the softmax function&lt;/h3&gt;
 
-&lt;p&gt;Since the softmax function is $\mathbb{R}^d \to \mathbb{R}^d$,  its derivative is a Jacobian matrix:&lt;/p&gt;
+&lt;p&gt;Since the softmax function is $\phi: \mathbb{R}^d \to \mathbb{R}^d$,  its derivative is a Jacobian matrix:&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
 \phi&#39;(z) = \begin{pmatrix}
@@ -305,9 +306,9 @@ h^{(0)} &amp;= x
 \frac{\partial \phi(z)_d}{z_1} &amp; \frac{\partial \phi(z)_d}{z_2} &amp; \dots &amp; \frac{\partial \phi(z)_d}{z_d} \\
 \end{pmatrix} %]]&gt;&lt;/script&gt;
 
-&lt;p&gt;We’ll index the rows by $i$ and columns by $j$.&lt;/p&gt;
+&lt;p&gt;Let’s derive each entry in this matrix.  We’ll index the rows by $i$ and columns by $j$.&lt;/p&gt;
 
-&lt;p&gt;For $i = j$, by quotient rule:&lt;/p&gt;
+&lt;p&gt;For $i = j$ entries, by quotient rule:&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
 \begin{align}
@@ -316,7 +317,7 @@ h^{(0)} &amp;= x
 &amp;= \phi(z)_i \left( 1 - \phi(z)_i \right)
 \end{align} %]]&gt;&lt;/script&gt;
 
-&lt;p&gt;And for $i \neq j$, by quotient rule:&lt;/p&gt;
+&lt;p&gt;And for $i \neq j$ entries, by quotient rule:&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
 \begin{align}
@@ -325,21 +326,22 @@ h^{(0)} &amp;= x
 &amp;= - \phi(z)_i \phi(z)_j
 \end{align} %]]&gt;&lt;/script&gt;
 
-&lt;h3 id=&quot;derivative-of-vector-with-respect-to-matrix&quot;&gt;Derivative of vector with respect to matrix&lt;/h3&gt;
+&lt;h3 id=&quot;deriving-the-tensor-for-softmax-regression&quot;&gt;Deriving the tensor for softmax regression&lt;/h3&gt;
 
-&lt;p&gt;Let $w$ be an $m \times n$ matrix.  Let $x$ be a vector of length $m$.&lt;/p&gt;
+&lt;p&gt;This section pertains to deriving the form of the tensor mentioned in &lt;a href=&quot;#softmax-regression-differentiation&quot;&gt;this section&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;Then:&lt;/p&gt;
-
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial w^T x}{\partial w} = 
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial z}{\partial w} = \frac{\partial w^T x}{\partial w} = 
 \begin{pmatrix} 
-\frac{\partial (w^T x)_1}{\partial w} \\ \frac{\partial (w^T x)_2}{\partial w} \\ \dots \\ \frac{\partial (w^T x)_n}{\partial w} 
+\frac{\partial (w^T x)_1}{\partial w} \\ \frac{\partial (w^T x)_2}{\partial w} \\ \dots \\ \frac{\partial (w^T x)_K}{\partial w} 
 \end{pmatrix}&lt;/script&gt;
 
-&lt;p&gt;is a rank-3 tensor of dimension $n \times m \times n$ where:&lt;/p&gt;
+&lt;p&gt;is a rank-3 tensor of dimension $K \times m \times K$ where:&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
-\frac{\partial (w^T x)_1 }{\partial w} = \begin{pmatrix} x_1 &amp; 0 &amp; \dots &amp; 0 \\ x_2 &amp; 0 &amp; \dots &amp; 0 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ x_m &amp; 0 &amp; \dots &amp; 0 \end{pmatrix} %]]&gt;&lt;/script&gt;
+\begin{align}
+\frac{\partial (w^T x)_1 }{\partial w} &amp;= \begin{pmatrix}\frac{\partial \sum w_{j1} x_j}{\partial w_{11}} &amp; \frac{\partial \sum w_{j1} x_j}{\partial w_{12}} &amp; \dots &amp; \frac{\partial \sum w_{j1} x_j}{\partial w_{1K}} \\ \frac{\partial \sum w_{j1} x_j}{\partial w_{21}} &amp; \frac{\partial \sum w_{j1} x_j}{\partial w_{22}} &amp; \dots &amp; \frac{\partial \sum w_{j1} x_j}{\partial w_{2K}} \\ \vdots &amp; \vdots &amp; \ddots \vdots \\ \frac{\partial \sum w_{j1} x_j}{\partial w_{m1}} &amp; \frac{\partial \sum w_{j1} x_j}{\partial w_{m2}} &amp; \dots &amp; \frac{\partial \sum w_{j1} x_j}{\partial w_{mK}} \end{pmatrix} \\
+&amp;= \begin{pmatrix} x_1 &amp; 0 &amp; \dots &amp; 0 \\ x_2 &amp; 0 &amp; \dots &amp; 0 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ x_m &amp; 0 &amp; \dots &amp; 0 \end{pmatrix}
+\end{align} %]]&gt;&lt;/script&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
 \frac{\partial (w^T x)_2 }{\partial w} = \begin{pmatrix} 0 &amp; x_1 &amp; 0 &amp; \dots &amp; 0 \\ 0 &amp; x_2 &amp; 0 &amp; \dots &amp; 0 \\ \vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; x_m &amp; 0 &amp; \dots &amp; 0 \end{pmatrix} %]]&gt;&lt;/script&gt;
@@ -347,26 +349,26 @@ h^{(0)} &amp;= x
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;\vdots&lt;/script&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
-\frac{\partial (w^T x)_n }{\partial w} = \begin{pmatrix} 0 &amp; \dots &amp; 0 &amp; x_1 \\ 0 &amp; \dots &amp; 0 &amp; x_2 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; \dots &amp; 0 &amp; x_m \end{pmatrix} %]]&gt;&lt;/script&gt;
+\frac{\partial (w^T x)_K }{\partial w} = \begin{pmatrix} 0 &amp; \dots &amp; 0 &amp; x_1 \\ 0 &amp; \dots &amp; 0 &amp; x_2 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; \dots &amp; 0 &amp; x_m \end{pmatrix} %]]&gt;&lt;/script&gt;
 
-&lt;h3 id=&quot;left-multiplying-above-tensor-with-a-vector&quot;&gt;Left multiplying (above) tensor with a vector&lt;/h3&gt;
+&lt;h3 id=&quot;showing-steps-in-vector-tensor-multiplication&quot;&gt;Showing steps in vector-tensor multiplication&lt;/h3&gt;
 
-&lt;p&gt;Continued from above.&lt;/p&gt;
+&lt;p&gt;This section pertains to showing details for the tensor multiplication step mentioned in &lt;a href=&quot;#softmax-regression-differentiation&quot;&gt;this section&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;Let $a$ be a vector of length $n$.  Then:&lt;/p&gt;
+&lt;p&gt;Let $a$ be a vector of length $K$.  Then:&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
 \begin{align}
-a^T \left[\frac{\partial w^T x}{\partial w}\right] &amp;=  \begin{pmatrix} a_1 &amp; a_2 &amp; \dots &amp; a_n \end{pmatrix}\begin{pmatrix} 
-\frac{\partial (w^T x)_1}{\partial w} \\ \frac{\partial (w^T x)_2}{\partial w} \\ \dots \\ \frac{\partial (w^T x)_n}{\partial w} 
+a^T \left[\frac{\partial w^T x}{\partial w}\right] &amp;=  \begin{pmatrix} a_1 &amp; a_2 &amp; \dots &amp; a_K \end{pmatrix}\begin{pmatrix} 
+\frac{\partial (w^T x)_1}{\partial w} \\ \frac{\partial (w^T x)_2}{\partial w} \\ \dots \\ \frac{\partial (w^T x)_K}{\partial w} 
 \end{pmatrix} \\
-&amp;= \sum_{j=1}^n a_j \frac{\partial (w^T x)_j }{\partial w} \\
-&amp;= a_1 \begin{pmatrix} x_1 &amp; 0 &amp; \dots &amp; 0 \\ x_2 &amp; 0 &amp; \dots &amp; 0 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ x_m &amp; 0 &amp; \dots &amp; 0 \end{pmatrix} + \dots + a_n \begin{pmatrix} 0 &amp; \dots &amp; 0 &amp; x_1 \\ 0 &amp; \dots &amp; 0 &amp; x_2 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; \dots &amp; 0 &amp; x_m \end{pmatrix} \\
-&amp;= \begin{pmatrix} a_1 x_1 &amp; a_2 x_1 &amp; \dots &amp; a_n x_1 \\ a_1 x_2 &amp; a_2 x_2 &amp; \dots &amp; a_n x_2 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ a_1 x_m &amp; a_2 x_m &amp; \dots &amp; a_n x_m \end{pmatrix} \\
+&amp;= \sum_{j=1}^K a_j \frac{\partial (w^T x)_j }{\partial w} \\
+&amp;= a_1 \begin{pmatrix} x_1 &amp; 0 &amp; \dots &amp; 0 \\ x_2 &amp; 0 &amp; \dots &amp; 0 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ x_m &amp; 0 &amp; \dots &amp; 0 \end{pmatrix} + \dots + a_K \begin{pmatrix} 0 &amp; \dots &amp; 0 &amp; x_1 \\ 0 &amp; \dots &amp; 0 &amp; x_2 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; \dots &amp; 0 &amp; x_m \end{pmatrix} \\
+&amp;= \begin{pmatrix} a_1 x_1 &amp; a_2 x_1 &amp; \dots &amp; a_K x_1 \\ a_1 x_2 &amp; a_2 x_2 &amp; \dots &amp; a_K x_2 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ a_1 x_m &amp; a_2 x_m &amp; \dots &amp; a_K x_m \end{pmatrix} \\
 &amp;= x a^T
 \end{align} %]]&gt;&lt;/script&gt;
 
-&lt;p&gt;Technically, the result is a $1 \times m \times n$ tensor, but we can effectively drop the first dimension and just treat the result as an $m \times n$ matrix.&lt;/p&gt;
+&lt;p&gt;Technically, the result is a $1 \times m \times K$ tensor, but we can effectively drop the first dimension and just treat the result as an $m \times K$ matrix.&lt;/p&gt;
 
 &lt;h3 id=&quot;derivatives-of-other-activation-functions&quot;&gt;Derivatives of other activation functions&lt;/h3&gt;
 
@@ -444,17 +446,17 @@ a^T \left[\frac{\partial w^T x}{\partial w}\right] &amp;=  \begin{pmatrix} a_1 &
 
 &lt;p&gt;Maximum likelihood tends to overfit and we often include a penalty term in the loss function to guard against this.  For example:&lt;/p&gt;
 
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathcal{L}(w_{1:L}) = \sum_{i=1}^n y^T \log h_i^{(L)} + \frac{\lambda}{2} \vert \vert w \vert \vert_2^2&lt;/script&gt;
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathcal{L}(w_{1:L}) = \sum_{i=1}^n y^T \log h_i^{(L)} + \frac{\lambda}{2} \Vert  w \Vert_2^2&lt;/script&gt;
 
-&lt;p&gt;where $\lambda &amp;gt; 0$ and $\vert \vert w \vert \vert_2^2$ denotes the sum of squared $w_{i,j}^{(l)}$ (except bias terms).&lt;/p&gt;
+&lt;p&gt;where $\lambda &amp;gt; 0$ and $\Vert w \Vert_2^2$ denotes the sum of squared $w_{i,j}^{(l)}$ (except bias terms).&lt;/p&gt;
 
 &lt;p&gt;Then:&lt;/p&gt;
 
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \mathcal{L}(w_{1:L})}{\partial w_l} = \frac{\partial \sum_{i=1}^n y^T \log h_i^{(L)}}{\partial w_l} + \frac{\lambda}{2} \frac{\partial \vert \vert w \vert \vert_2^2}{\partial w_l}&lt;/script&gt;
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \mathcal{L}(w_{1:L})}{\partial w_l} = \frac{\partial \sum_{i=1}^n y^T \log h_i^{(L)}}{\partial w_l} + \frac{\lambda}{2} \frac{\partial \Vert w \Vert_2^2}{\partial w_l}&lt;/script&gt;
 
 &lt;p&gt;for which the former term we’ve already derived.  The latter term is:&lt;/p&gt;
 
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \vert \vert w \vert \vert_2^2}{\partial w_l} = 2 w_l&lt;/script&gt;
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\frac{\partial \Vert w \Vert_2^2}{\partial w_l} = 2 w_l&lt;/script&gt;
 
 &lt;p&gt;which is an $m_{l-1} \times m_l$ matrix.&lt;/p&gt;
 
