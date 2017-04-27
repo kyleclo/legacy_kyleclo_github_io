@@ -4,7 +4,7 @@ title: 'Derivations for the forward-backward algorithm'
 ---
 
 
-These are simple derivations for the famous forward-backward algorithm by [Baum et. al. (1970)](https://projecteuclid.org/euclid.aoms/1177697196) for computing posteriors of hidden states in HMMs.  
+First post!  To test this out: Here are derivations for the forward-backward algorithm by [Baum et. al. (1970)](https://projecteuclid.org/euclid.aoms/1177697196) for computing posteriors of hidden states in HMMs.  
 
 # Hidden Markov model
 
@@ -116,13 +116,6 @@ Of course, this isn't enough by itself:
 
 - The Baum-Welch algorithm uses the forward-backward algorithm to compute maximum likelihood estimates of the HMM parameters (i.e. the probabilities/distributions that we took as "given").  
 
-
-# Postface
-
-Had to learn stuff about HMMs while working on changepoint problems, and I figured I might as well organize some notes for future reference.  Hopefully someone else also finds these derivations useful.
-
-Credit given to Jeffrey Miller's [mini-lectures](https://www.youtube.com/user/mathematicalmonk), which were really easy to digest for someone new to the material like myself.  
-
-For an introduction to HMMs, I recommend reading Sections I-III of: 
+All of this introductory material on HMMs can be found in Sections I-III of: 
 
 *Rabiner, L. R. (1989). A tutorial on hidden Markov models and selected applications in speech recognition. Proceedings of the IEEE, 77(2), 257-286.*

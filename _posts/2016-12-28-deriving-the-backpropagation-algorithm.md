@@ -3,9 +3,7 @@ layout: post
 title: 'Deriving the backpropagation algorithm'
 ---
 
-Here are some notes containing step-by-step derivations of the backpropagation algorithm for neural networks.  
-
-This post serves more as a reference than as an introduction to the subject.  It assumes the reader is already familiar with neural networks and is comfortable with differentiation and matrix algebra. 
+Here are some notes containing step-by-step derivations of the backpropagation algorithm for neural networks.  This post serves more as a reference than as an introduction to the subject.  It assumes the reader is already familiar with neural networks and is comfortable with differentiation and matrix algebra. 
 
 Regarding notation:
 
