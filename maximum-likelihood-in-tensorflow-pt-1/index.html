@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      Maximum likelihood in TensorFlow pt. 1 &middot; Kyle Lo
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/public/css/poole.css">
+  <link rel="stylesheet" href="/public/css/syntax.css">
+  <link rel="stylesheet" href="/public/css/hyde.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/icons/apple-icon-precomposed.png">
+  <link rel="shortcut icon" href="/images/icons/favicon.ico">
+
+  <!-- Mathjax -->
+  <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+  });
+  </script>  
+
+  <script type="text/javascript"
+    src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+  </script>
+
+  <!-- Google Analytics -->
+  <!-- see https://github.com/gastonstat/gastonstat.github.io/blob/master/_includes/head.html -->
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
+</head>
+
+
+  <body>
+
+    <div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-image">
+      <img src="/images/bio.jpg" alt="Kyle Lo">
+    </div>
+    <div class="sidebar-about">
+    <h1>
+        <a href="/">
+          Kyle Lo
+        </a>
+    </h1>  
+    <p class="lead">Statistics and stuff</p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="sidebar-nav-item" href="/">Home</a>
+
+      
+
+      
+      
+        
+          
+        
+      
+        
+          
+            <a class="sidebar-nav-item" href="/about/">About</a>
+          
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+
+      <a class="sidebar-nav-item" href="https://github.com/solstat/snake_learning">deep-rf</a>
+      <a class="sidebar-nav-item" href="https://github.com/kyleclo/structural">structural</a>
+    </nav>
+
+    <p>&copy; 2017. All rights reserved.</p>
+  </div>
+</div>
+
+
+    <div class="content container">
+      <div class="post">
+  <h1 class="post-title">Maximum likelihood in TensorFlow pt. 1</h1>
+  <span class="post-date">08 May 2017</span>
+  <p>Here are step-by-step examples demonstrating how to use TensorFlow’s autodifferentiation toolbox for maximum likelihood estimation.  I show how to compute the MLEs of a univariate Gaussian using TensorFlow-provided gradient descent optimizers or by passing scipy’s BFGS optimizer to the TensorFlow computation graph.</p>
+
+<ul>
+  <li><a href="#mle-of-univariate-gaussian-with-gradient-descent">MLE of univariate Gaussian with gradient descent</a>
+    <ul>
+      <li><a href="#preprocessing-the-data">Preprocessing the data</a></li>
+      <li><a href="#part1">Part 1: Define computational graph</a></li>
+      <li><a href="#part2">Part 2:  Run optimization scheme</a></li>
+      <li><a href="#results">Results</a></li>
+    </ul>
+  </li>
+  <li><a href="#mle-of-univariate-gaussian-with-newton-methods">MLE of univariate Gaussian with Newton methods</a>
+    <ul>
+      <li><a href="#computing-the-hessian">Computing the Hessian</a></li>
+      <li><a href="#convexity-of-natural-parameterization">Convexity of natural parameterization</a></li>
+      <li><a href="#using-scipys-bfgs-optimizer">Using scipy’s BFGS optimizer</a></li>
+    </ul>
+  </li>
+  <li><a href="#appendix">Appendix</a>
+    <ul>
+      <li><a href="#verify-gradient-and-hessian-computations">Verify gradient and Hessian computations</a></li>
+      <li><a href="#gradient-descent-with-natural-parameters">Gradient descent with natural parameters</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p>The full code for each of these examples can be found in <a href="https://github.com/kyleclo/tensorflow-mle">this repo</a>.  The code snippets in this post are simplified for illustrative purposes, while the full code in the linked repo are executable.</p>
+
+<h2 id="mle-of-univariate-gaussian-with-gradient-descent">MLE of univariate Gaussian with gradient descent</h2>
+
+<p>Let’s start with a simple example using gradient descent to find the MLE of a univariate Gaussian variable $X$ with mean $\mu$ and standard deviation $\sigma$.  We observe an iid sample of size $n = 100$.</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="n">TRUE_MU</span> <span class="o">=</span> <span class="mf">10.0</span>
+<span class="n">TRUE_SIGMA</span> <span class="o">=</span> <span class="mf">5.0</span>
+<span class="n">SAMPLE_SIZE</span> <span class="o">=</span> <span class="mi">100</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">x_obs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="n">TRUE_MU</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">TRUE_SIGMA</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">SAMPLE_SIZE</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>We know that the correct MLEs are the sample mean and sample standard deviation of the data.  We will be evaluating whether TensorFlow’s optimizer converges to these values.</p>
+
+<h4 id="preprocessing-the-data">Preprocessing the data</h4>
+
+<p>Before doing any optimization, let’s standardize the raw data.</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="n">CENTER</span> <span class="o">=</span> <span class="n">x_obs</span><span class="o">.</span><span class="nb">min</span><span class="p">()</span>
+<span class="n">SCALE</span> <span class="o">=</span> <span class="n">x_obs</span><span class="o">.</span><span class="nb">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">x_obs</span><span class="o">.</span><span class="nb">min</span><span class="p">()</span>
+<span class="n">x_obs</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_obs</span> <span class="o">-</span> <span class="n">CENTER</span><span class="p">)</span> <span class="o">/</span> <span class="n">SCALE</span>
+</code></pre>
+</div>
+
+<p>Standardizing variables can make it easier to set reasonable defaults for initial values and learning rate.  Usually, <code class="highlighter-rouge">CENTER = x_obs.mean()</code> and <code class="highlighter-rouge">SCALE = x_obs.std()</code>.  For our example, we instead standardize the data using its min and max values just so things aren’t too easy.</p>
+
+<p>Since the transformation is linear and the parameters of interest are the mean and standard deviation, the MLEs computed from the standardized data can be transformed back to get the MLEs of the original data:</p>
+
+<script type="math/tex; mode=display">\widehat{\mu}_{original} = SCALE \cdot \widehat{\mu}_{standard} + CENTER</script>
+
+<script type="math/tex; mode=display">\widehat{\sigma}_{original} = SCALE \cdot \widehat{\sigma}_{standard}</script>
+
+<p>Note that we won’t always know how a specific transformation applied to the data will impact the parameters of interest.</p>
+
+<p><a id="part1"></a></p>
+
+<h4 id="part-1--define-computational-graph">Part 1:  Define computational graph</h4>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
+
+<span class="c"># data</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="n">INIT_MU_PARAMS</span> <span class="o">=</span> <span class="p">{</span><span class="s">'loc'</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s">'scale'</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">}</span>
+<span class="n">INIT_PHI_PARAMS</span> <span class="o">=</span> <span class="p">{</span><span class="s">'loc'</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s">'scale'</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">}</span>
+<span class="n">RANDOM_SEED</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="c"># params</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">RANDOM_SEED</span><span class="p">)</span>
+<span class="n">mu</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="o">**</span><span class="n">INIT_MU_PARAMS</span><span class="p">),</span>
+                 <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">phi</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="o">**</span><span class="n">INIT_PHI_PARAMS</span><span class="p">),</span>
+                  <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">sigma</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
+
+<span class="c"># loss</span>
+<span class="n">gaussian_dist</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">contrib</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="n">mu</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">sigma</span><span class="p">)</span>
+<span class="n">log_prob</span> <span class="o">=</span> <span class="n">gaussian_dist</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">x</span><span class="p">)</span>
+<span class="n">neg_log_likelihood</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">log_prob</span><span class="p">)</span>
+
+<span class="c"># gradient</span>
+<span class="n">grad</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gradients</span><span class="p">(</span><span class="n">neg_log_likelihood</span><span class="p">,</span> <span class="p">[</span><span class="n">mu</span><span class="p">,</span> <span class="n">phi</span><span class="p">])</span>
+</code></pre>
+</div>
+
+<p>Several things to note:</p>
+
+<ul>
+  <li>
+    <p>The <code class="highlighter-rouge">tf.contrib.distributions</code> module provides implementations of common distributions, but its use is optional.  You can always simply define the loss function from scratch.</p>
+  </li>
+  <li>
+    <p>TensorFlow doesn’t seem to provide a way to explicitly enforce variable constraints, i.e. $\sigma \gt 0$.  To handle this, we use the parameterization $\sigma = \phi^2$:</p>
+
+    <ul>
+      <li>
+        <p>This means our loss function will be optimized with respect to $\phi \in \mathbb{R}$, and we won’t have awkward gradient steps that push $\sigma$ outside the range of viable values.</p>
+      </li>
+      <li>
+        <p>But this also means the solution is non-unique: Two values of $\phi$ correspond to a single optimal $\sigma$.  The loss function is symmetric around $\phi = 0$, and we might be concerned with potential jumping between solutions if the true $\sigma$ is very small (causing the optimal $\phi$ values to be sufficiently close to each other in parameter space).</p>
+      </li>
+      <li>
+        <p>For more discussion on this, see the section about variance-covariance parameterization using the Cholesky decomposition in <a href="https://pdfs.semanticscholar.org/2ff5/5b99d6d94d331670719bb1df1827b4d502a7.pdf">Pinheiro, J. C., &amp; Bates, D. M. (1996)</a>.</p>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>It’s common practice to randomly initialize parameters by drawing from independent zero-centered Gaussians.  One consideration is initializing $\phi$ to be sufficiently far from $0$ so our gradient doesn’t explode (see in <a href="#verify-gradient-and-hessian-computations">Appendix</a> that gradient magnitude is inversely proportional to $\phi$).</p>
+  </li>
+  <li>
+    <p>Personally, I like using numpy’s <code class="highlighter-rouge">np.random.normal()</code> rather than TensorFlow’s <code class="highlighter-rouge">tf.random_normal()</code> because I can check the generated value without using <code class="highlighter-rouge">sess.run()</code>.  But the TensorFlow-provided function can be used with a GPU, so for those interested:</p>
+  </li>
+</ul>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="n">INIT_MU_PARAMS</span> <span class="o">=</span> <span class="p">{</span><span class="s">'mean'</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s">'stddev'</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">}</span>
+<span class="n">INIT_PHI_PARAMS</span> <span class="o">=</span> <span class="p">{</span><span class="s">'mean'</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s">'stddev'</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">}</span>
+
+<span class="n">mu</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">random_normal</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[],</span>
+                                                <span class="n">seed</span><span class="o">=</span><span class="n">RANDOM_SEED</span><span class="p">,</span>
+                                                <span class="o">**</span><span class="n">INIT_MU_PARAMS</span><span class="p">),</span>
+                 <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">phi</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">random_normal</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[],</span>
+                                                 <span class="n">seed</span><span class="o">=</span><span class="n">RANDOM_SEED</span><span class="p">,</span>
+                                                 <span class="o">**</span><span class="n">INIT_PHI_PARAMS</span><span class="p">),</span>
+                  <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p><a id="part2"></a></p>
+
+<h4 id="part-2--run-optimization-scheme">Part 2:  Run optimization scheme</h4>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="n">LEARNING_RATE</span> <span class="o">=</span> <span class="mf">0.001</span>
+<span class="n">MAX_ITER</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">TOL_PARAM</span><span class="p">,</span> <span class="n">TOL_LOSS</span><span class="p">,</span> <span class="n">TOL_GRAD</span> <span class="o">=</span> <span class="mf">1e-8</span><span class="p">,</span> <span class="mf">1e-8</span><span class="p">,</span> <span class="mf">1e-8</span>
+
+<span class="c"># optimizer</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">AdamOptimizer</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">LEARNING_RATE</span><span class="p">)</span>
+<span class="n">train_op</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="n">neg_log_likelihood</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">sess</span><span class="p">:</span>
+	<span class="c"># initialize</span>
+    <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">global_variables_initializer</span><span class="p">())</span>
+
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">obs_mu</span><span class="p">,</span> <span class="n">obs_phi</span><span class="p">,</span> <span class="n">obs_sigma</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="p">[[</span><span class="n">mu</span><span class="p">],</span> <span class="p">[</span><span class="n">phi</span><span class="p">],</span> <span class="p">[</span><span class="n">sigma</span><span class="p">]])</span>
+    <span class="n">obs_loss</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="p">[</span><span class="n">neg_log_likelihood</span><span class="p">],</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">x_obs</span><span class="p">})</span>
+    <span class="n">obs_grad</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="p">[</span><span class="n">grad</span><span class="p">],</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">x_obs</span><span class="p">})</span>
+        
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="c"># gradient step</span>
+        <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="n">train_op</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">x_obs</span><span class="p">})</span>
+
+        <span class="c"># update parameters</span>
+        <span class="n">new_mu</span><span class="p">,</span> <span class="n">new_phi</span><span class="p">,</span> <span class="n">new_sigma</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="p">[</span><span class="n">mu</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">sigma</span><span class="p">])</span>
+        <span class="n">diff_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">([</span><span class="n">new_mu</span><span class="p">,</span> <span class="n">new_phi</span><span class="p">],</span>
+                                               <span class="p">[</span><span class="n">obs_mu</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">obs_phi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]))</span>
+        <span class="c"># update loss</span>
+        <span class="n">new_loss</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="n">neg_log_likelihood</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">x_obs</span><span class="p">})</span>
+        <span class="n">loss_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="nb">abs</span><span class="p">(</span><span class="n">new_loss</span> <span class="o">-</span> <span class="n">obs_loss</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c"># update gradient</span>
+        <span class="n">new_grad</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="n">grad</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">x_obs</span><span class="p">})</span>
+        <span class="n">grad_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">new_grad</span><span class="p">)</span>
+        
+        <span class="n">obs_mu</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_mu</span><span class="p">)</span>
+        <span class="n">obs_phi</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_phi</span><span class="p">)</span>
+        <span class="n">obs_sigma</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_sigma</span><span class="p">)</span>
+        <span class="n">obs_loss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_loss</span><span class="p">)</span>
+        <span class="n">obs_grad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_grad</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">param_diff_norm</span> <span class="o">&lt;</span> <span class="n">TOL_PARAM</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">'Parameter convergence in {} iterations!'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">loss_diff</span> <span class="o">&lt;</span> <span class="n">TOL_LOSS</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">'Loss function convergence in {} iterations!'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">grad_norm</span> <span class="o">&lt;</span> <span class="n">TOL_GRAD</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">'Gradient convergence in {} iterations!'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">MAX_ITER</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">'Max number of iterations reached without convergence.'</span><span class="p">)</span>
+            <span class="k">break</span>
+
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+</code></pre>
+</div>
+
+<p>More notes:</p>
+
+<ul>
+  <li>
+    <p>We used the Adam optimizer which is a pretty good default choice since it has a momentum-based adaptive step size.  I’ve noticed that traversing steep or flat regions of parameter space can be problematic since the Adam update rule depends on an averaging of past computed gradients.  You can see this effect by changing the $\phi$ initialization closer to $0$ which causes the gradient to explode.</p>
+
+    <ul>
+      <li>See <a href="http://sebastianruder.com/optimizing-gradient-descent/">Sebastian Ruder’s blog post</a> for an overview of other (stochastic) gradient descent methods, though I think time is better spent worrying about improving the initialization scheme.</li>
+    </ul>
+  </li>
+  <li>
+    <p>The initial learning rate at $\alpha = 0.001$ and convergence tolerance values at $\delta = 10^{-8}$ are common default choices.  Standardizing the variables can make it easier to set reasonable defaults that work across multiple realizations of the generating distribution, but picking good values for $\alpha$ and $\delta$ is often a trial-and-error effort.</p>
+  </li>
+  <li>
+    <p>When checking for parameter convergence, the norm of the parameter vector is computed using the values of $\phi$ even though we choose to display values of $\sigma$ for interpretability.</p>
+  </li>
+</ul>
+
+<h4 id="results">Results</h4>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>  iter |     mu     |   sigma    |    loss    |    grad   
+     1 | 0.17740524 | 1.07955348 | 107.118011 | 166.314087
+   101 | 0.27897912 | 0.87825149 | 86.2192841 | 185.379456
+   201 | 0.38198292 | 0.68829656 | 61.8442612 | 208.598816
+   301 | 0.47547418 | 0.51341331 | 34.3445473 | 229.603500
+   401 | 0.53297198 | 0.36388707 | 7.32367325 | 222.097382
+   501 | 0.54181617 | 0.25903416 | -10.640480 | 137.181747
+   601 | 0.54176593 | 0.21581791 | -14.554010 | 26.8282032
+   701 | 0.54176593 | 0.20935123 | -14.655022 | 1.52713740
+
+Loss function convergence in 718 iterations!
+
+Fitted MLE: [0.5418, 0.2092]
+Target MLE: [0.5418, 0.2090]
+</code></pre>
+</div>
+
+<p>The optimization procedure indeed converges (within some floating point precision) to the sample mean and sample standard deviation of the transformed data — it works!  The full code for this example is provided <a href="https://github.com/kyleclo/tensorflow-mle/blob/master/univariate_gauss_adam.py">here</a>.</p>
+
+<p><img src="/images/posts/canon-adam-001.png" alt="canon-adam-001" /></p>
+
+<h2 id="mle-of-univariate-gaussian-with-newton-methods">MLE of univariate Gaussian with Newton methods</h2>
+
+<p>What about Newton methods?  Even if most optimization problems are non-convex, I seems like a good idea to know how to call BFGS in TensorFlow.</p>
+
+<h4 id="computing-the-hessian">Computing the Hessian</h4>
+
+<p>TensorFlow provides a <code class="highlighter-rouge">tf.hessians()</code> function that appears similar to <code class="highlighter-rouge">tf.gradients()</code> in its API, but I’ve found it extremely difficult to work with — grumble grumble can only compute second derivatives with respect to one-dimensional Tensors.</p>
+
+<p>Instead, I recommend something like this:</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="n">hess</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">gradients</span><span class="p">(</span><span class="n">grad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">mu</span><span class="p">,</span> <span class="n">phi</span><span class="p">]),</span>
+                        <span class="n">tf</span><span class="o">.</span><span class="n">gradients</span><span class="p">(</span><span class="n">grad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">mu</span><span class="p">,</span> <span class="n">phi</span><span class="p">])],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>where <code class="highlighter-rouge">grad[0]</code> and <code class="highlighter-rouge">grad[1]</code> are the derivatives of <code class="highlighter-rouge">neg_log_likelihood</code> with respect to <code class="highlighter-rouge">mu</code> and <code class="highlighter-rouge">phi</code> respectively.</p>
+
+<p>For example, the final Hessian upon convergence is:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>| 2285.12793 | -0.0032801 |
+| -0.0032043 | 3814.80054 |
+</code></pre>
+</div>
+
+<p>which we can verify is positive definite by checking:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">np.linalg.cholesky(obs_hess[-1])</code> successfully returns a result, or</li>
+  <li><code class="highlighter-rouge">np.linalg.eigvals(obs_hess[-1])</code> returns all positive eigenvalues</li>
+</ul>
+
+<p>where <code class="highlighter-rouge">obs_hess</code> is a list storing the computed Hessians at each iteration.</p>
+
+<h4 id="convexity-of-natural-parameterization">Convexity of natural parameterization</h4>
+
+<p>Note that the computed Hessians are not always positive definite.  For example, <code class="highlighter-rouge">obs_hess[0]</code> is:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>| 85.8048019 | 120.359650 |
+| 120.359650 | -45.029373 |
+</code></pre>
+</div>
+
+<p>While we can <a href="https://people.eecs.berkeley.edu/~jordan/courses/260-spring10/other-readings/chapter8.pdf">prove</a> that the natural parameter space for exponential families is always convex, this is not necessarily true for other parameterizations.</p>
+
+<p>The distributions provided by <code class="highlighter-rouge">tf.contrib.distributions</code> don’t have natural parameterization options, so they’ll need to be coded from scratch.  Let’s do this for the Gaussian distribution:</p>
+
+<script type="math/tex; mode=display">f_{\eta}(x) = h(x) \exp\left( \eta \cdot T(x) - A(\eta) \right)</script>
+
+<p>where:</p>
+
+<ul>
+  <li>The natural parameters $\eta =\left[\mu / 2 \sigma^2, -1 / 2 \sigma^2 \right]^T$</li>
+  <li>The sufficient statistics $T(x) = \left[ x, x^2 \right]^T$</li>
+  <li>The log-partition function $A(\eta) = -\eta_1^2/ 4 \eta_2 - \log (-2\eta_2) / 2$</li>
+</ul>
+
+<p>Dropping the constant term $h(x)$, we replace our loss function with:</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="n">log_partition</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.25</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">eta1</span><span class="p">)</span> <span class="o">/</span> <span class="n">eta2</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="o">-</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">eta2</span><span class="p">)</span>
+<span class="n">log_prob</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="n">eta1</span> <span class="o">+</span> <span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">eta2</span> <span class="o">-</span> <span class="n">log_partition</span>
+<span class="n">neg_log_likelihood</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">log_prob</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>where <code class="highlighter-rouge">eta1</code> and <code class="highlighter-rouge">eta2</code> are our defined parameters instead of <code class="highlighter-rouge">mu</code> and <code class="highlighter-rouge">phi</code>.</p>
+
+<h4 id="using-scipys-bfgs-optimizer">Using scipy’s BFGS optimizer</h4>
+
+<p>Now that we have a convex loss function, we can use a Newton method for faster convergence.  TensorFlow provides an interface for external optimizers.  For example, we can use scipy’s BFGS optimizer:</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="n">optimizer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">contrib</span><span class="o">.</span><span class="n">opt</span><span class="o">.</span><span class="n">ScipyOptimizerInterface</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="n">neg_log_likelihood</span><span class="p">,</span>
+                                                   <span class="n">method</span><span class="o">=</span><span class="s">'L-BFGS-B'</span><span class="p">)</span>
+<span class="o">...</span>
+
+<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+	<span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">session</span><span class="o">=</span><span class="n">sess</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">x_obs</span><span class="p">})</span>
+</code></pre>
+</div>
+
+<p>Note the API is slightly different.  We’re passing in the session into the optimizer’s <code class="highlighter-rouge">minimize()</code> method instead of calling <code class="highlighter-rouge">sess.run()</code>.   The full code for this example is provided <a href="https://github.com/kyleclo/tensorflow-mle/blob/master/univariate_gauss_bfgs.py">here</a>.</p>
+
+<p>Running it, we see the algorithm converges very quickly to the solution:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>  iter |     mu     |   sigma    |    loss    |    grad   
+     1 | 0.54175494 | 0.20899648 | -106.54919 | 0.00128950
+
+Parameter convergence in 3 iterations!
+
+Fitted MLE: [0.5418, 0.2090]
+Target MLE: [0.5418, 0.2090]
+</code></pre>
+</div>
+
+<p>Don’t be confused by the output.  The optimization is taking gradients and hessians with respect to the natural parameters.  I simply like reporting $\mu$ and $\sigma$ because they’re more interpretable.</p>
+
+<p><img src="/images/posts/bfgs-musigma.png" alt="bfgs-musigma" /></p>
+
+<p><img src="/images/posts/bfgs-eta.png" alt="bfgs-eta" /></p>
+
+<h2 id="appendix">Appendix</h2>
+
+<h4 id="verify-gradient-and-hessian-computations">Verify gradient and Hessian computations</h4>
+
+<p>Let’s quickly verify that our code for computing gradients and Hessians are correct.  We derive analytically:</p>
+
+<script type="math/tex; mode=display">\mathcal{L}(\mu, \phi) = n \log \phi^2 + \frac{\sum (x_i - \mu)^2}{2\phi^4}</script>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\nabla \mathcal{L}(\mu, \phi) = \begin{pmatrix} - \frac{\sum(x_i - \mu)}{\phi^4} & \frac{2n}{\phi} - \frac{2\sum(x_i - \mu)^2}{\phi^5} \end{pmatrix} %]]></script>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\text{Hess } \mathcal{L}(\mu, \phi) = \begin{pmatrix}
+\frac{n}{\phi^4} & \frac{4 \sum(x_i - \mu)}{\phi^5} \\ \frac{4\sum(x_i - \mu)}{\phi^5} & -\frac{2n}{\phi^2} + \frac{10 \sum (x_i - \mu)^2}{\phi^6}
+\end{pmatrix} %]]></script>
+
+<p>Now we can evaluate:</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="nf">analytic_grad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">phi</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">g1</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span><span class="o">.</span><span class="nb">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">phi</span> <span class="o">**</span> <span class="mi">4</span>
+    <span class="n">g2</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span> <span class="o">/</span> <span class="n">phi</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="nb">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">phi</span> <span class="o">**</span> <span class="mi">5</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">g1</span><span class="p">,</span> <span class="n">g2</span><span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">analytic_hess</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">phi</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">h11</span> <span class="o">=</span> <span class="n">n</span> <span class="o">/</span> <span class="n">phi</span> <span class="o">**</span> <span class="mi">4</span>
+    <span class="n">h21</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span><span class="o">.</span><span class="nb">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">phi</span> <span class="o">**</span> <span class="mi">5</span>
+    <span class="n">h12</span> <span class="o">=</span> <span class="n">h21</span>
+    <span class="n">h22</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n</span> <span class="o">/</span> <span class="n">phi</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">10</span> <span class="o">*</span> <span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="nb">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">phi</span> <span class="o">**</span> <span class="mi">6</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">h11</span><span class="p">,</span> <span class="n">h12</span><span class="p">],</span> <span class="p">[</span><span class="n">h21</span><span class="p">,</span> <span class="n">h22</span><span class="p">]])</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">analytic_grad</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x_obs</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">obs_mu</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">phi</span><span class="o">=</span><span class="n">obs_phi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">analytic_hess</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x_obs</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">obs_mu</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">phi</span><span class="o">=</span><span class="n">obs_phi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+</code></pre>
+</div>
+
+<p>which match the values of <code class="highlighter-rouge">obs_grad[-1]</code> and <code class="highlighter-rouge">obs_hess[-1]</code> (up to some floating point precision).</p>
+
+<h4 id="gradient-descent-with-natural-parameters">Gradient descent with natural parameters</h4>
+
+<p>We performed gradient descent on the canonical parameters and BFGS on the natural parameters.  But is there any benefit to performing gradient descent on the natural parameters?</p>
+
+<p>Maybe.</p>
+
+<p>To illustrate, let’s run Adam on the natural parameters (see the commented-out lines in BFGS example code) with initial learning rate $\alpha = 0.1$:</p>
+
+<p><img src="/images/posts/nat-adam-01-musigma.png" alt="nat-adam-01-musigma" /></p>
+
+<p><img src="/images/posts/nat-adam-01-eta.png" alt="nat-adam-01-eta" /></p>
+
+<p>And we compare this to running Adam on the canonical parameters also with $\alpha = 0.1$:</p>
+
+<p><img src="/images/posts/canon-adam-01.png" alt="canon-adam-01" /></p>
+
+<p>For this choice of $\alpha$, we notice:</p>
+
+<ul>
+  <li>
+    <p>The natural parameterization converges slower than the canonical parameterization.</p>
+  </li>
+  <li>
+    <p>The natural parameterization seems to result in a smoothly-decreasing loss function whereas the loss under the canonical parameterization appears unstable.</p>
+  </li>
+  <li>
+    <p>The gradient path under natural parameterization is a straight shot towards the location of the optima whereas the gradient path under canonical parameterization traverses parameter space in a more roundabout way.</p>
+  </li>
+</ul>
+
+<p>And these empirical observations seem to hold for different choices of $\alpha$, though I still don’t really have a great explanation for why.</p>
+
+<h4 id="resources">Resources</h4>
+
+<p><a href="http://proceedings.mlr.press/v28/sutskever13.pdf">Sutskever, I., Martens, J., Dahl, G., &amp; Hinton, G. (2013, February). On the importance of initialization and momentum in deep learning. In International conference on machine learning (pp. 1139-1147).</a></p>
+
+<p><a href="https://pdfs.semanticscholar.org/2ff5/5b99d6d94d331670719bb1df1827b4d502a7.pdf">Pinheiro, J. C., &amp; Bates, D. M. (1996). Unconstrained parametrizations for variance-covariance matrices. Statistics and Computing, 6(3), 289-296.</a></p>
+
+<p><a href="https://arxiv.org/pdf/1609.04747.pdf">Ruder, S. (2016). An overview of gradient descent optimization algorithms. arXiv preprint arXiv:1609.04747.</a></p>
+
+</div>
+
+
+<div class="related">
+  <h2>Related Posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/deriving-the-backpropagation-algorithm/">
+            Deriving the backpropagation algorithm
+            <small>28 Dec 2016</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/forward-backward-algorithm/">
+            Derivations for the forward-backward algorithm
+            <small>21 Sep 2016</small>
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+    </div>
+
+  </body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      Basic statistics in TensorFlow &middot; Kyle Lo
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/public/css/poole.css">
+  <link rel="stylesheet" href="/public/css/syntax.css">
+  <link rel="stylesheet" href="/public/css/hyde.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/icons/apple-icon-precomposed.png">
+  <link rel="shortcut icon" href="/images/icons/favicon.ico">
+
+  <!-- Mathjax -->
+  <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+  });
+  </script>  
+
+  <script type="text/javascript"
+    src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+  </script>
+
+  <!-- Google Analytics -->
+  <!-- see https://github.com/gastonstat/gastonstat.github.io/blob/master/_includes/head.html -->
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
+</head>
+
+
+  <body>
+
+    <div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-image">
+      <img src="/images/bio.jpg" alt="Kyle Lo">
+    </div>
+    <div class="sidebar-about">
+    <h1>
+        <a href="/">
+          Kyle Lo
+        </a>
+    </h1>  
+    <p class="lead">Statistics and stuff</p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="sidebar-nav-item" href="/">Home</a>
+
+      
+
+      
+      
+        
+          
+        
+      
+        
+          
+            <a class="sidebar-nav-item" href="/about/">About</a>
+          
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+
+      <a class="sidebar-nav-item" href="https://github.com/solstat/snake_learning">deep-rf</a>
+      <a class="sidebar-nav-item" href="https://github.com/kyleclo/structural">structural</a>
+    </nav>
+
+    <p>&copy; 2017. All rights reserved.</p>
+  </div>
+</div>
+
+
+    <div class="content container">
+      <div class="post">
+  <h1 class="post-title">Basic statistics in TensorFlow</h1>
+  <span class="post-date">08 May 2017</span>
+  <p>Just a short post with some examples of how to use TensorFlow’s auto-differentiation to compute MLEs.</p>
+
+<h2 id="gradient-descent">Gradient descent</h2>
+
+<p>Let’s start with a simple example:</p>
+
+<ul>
+  <li>We want to compute the MLE of a univariate Gaussian, from which we observe an iid sample of size $n = 100$.</li>
+  <li>The true mean and standard deviation are $(10, 5)$.</li>
+  <li>We use gradient descent initialized at $(0, 1)$ with a very fine step size $\alpha = 0.0001$.</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
+
+<span class="n">sess</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+
+<span class="n">TRUE_MU</span><span class="p">,</span> <span class="n">INIT_MU</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">0.0</span>
+<span class="n">TRUE_SIGMA</span><span class="p">,</span> <span class="n">INIT_SIGMA</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">1.0</span>
+<span class="n">SAMPLE_SIZE</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">LEARNING_RATE</span> <span class="o">=</span> <span class="mf">0.0001</span>
+<span class="n">NUM_ITERATIONS</span> <span class="o">=</span> <span class="mi">10000</span>
+
+<span class="c"># generate sample</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">x_obs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="n">TRUE_MU</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">TRUE_SIGMA</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">SAMPLE_SIZE</span><span class="p">)</span>
+
+<span class="n">mu</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">INIT_MU</span><span class="p">)</span>
+<span class="n">sigma</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">INIT_SIGMA</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="n">gaussian_dist</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">contrib</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="n">mu</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">sigma</span><span class="p">)</span>
+<span class="n">log_prob</span> <span class="o">=</span> <span class="n">gaussian_dist</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">x</span><span class="p">)</span>
+<span class="n">neg_log_likelihood</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">log_prob</span><span class="p">)</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">GradientDescentOptimizer</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">LEARNING_RATE</span><span class="p">)</span>
+<span class="n">train_op</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="n">neg_log_likelihood</span><span class="p">)</span>
+
+<span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">global_variables_initializer</span><span class="p">())</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">' iter |   mu   | sigma  |   loss'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">NUM_ITERATIONS</span><span class="p">):</span>
+    <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="n">train_op</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">x_obs</span><span class="p">})</span>
+    <span class="n">mu_hat</span><span class="p">,</span> <span class="n">sigma_hat</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="p">[</span><span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">])</span>
+    <span class="n">obs_loss</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="o">=</span><span class="n">neg_log_likelihood</span><span class="p">,</span>
+                        <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">x_obs</span><span class="p">})</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">' {:4} | {:.4f} | {:.4f} | {:.4f}'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">mu_hat</span><span class="p">,</span> <span class="n">sigma_hat</span><span class="p">,</span>
+                                                        <span class="n">obs_loss</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">'Fitted MLE: [{:.4f}, {:.4f}]'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mu_hat</span><span class="p">,</span> <span class="n">sigma_hat</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="s">'Target MLE: [{:.4f}, {:.4f}]'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x_obs</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">x_obs</span><span class="o">.</span><span class="n">std</span><span class="p">()))</span>
+</code></pre>
+</div>
+
+
+</div>
+
+
+<div class="related">
+  <h2>Related Posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/deriving-the-backpropagation-algorithm/">
+            Deriving the backpropagation algorithm
+            <small>28 Dec 2016</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/forward-backward-algorithm/">
+            Derivations for the forward-backward algorithm
+            <small>21 Sep 2016</small>
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+    </div>
+
+  </body>
+</html>
