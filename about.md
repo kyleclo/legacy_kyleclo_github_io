@@ -5,9 +5,9 @@ title: About
 
 Welcome to my site!
 
-I'm a statistician / data scientist on the Research Team at [CDK Global](http://www.cdkglobal.com/) in Seattle.  My work involves designing and writing software applications that apply statistical & machine learning methods to solve business problems.  My projects cover a variety of topics, including time series forecasting, classification, and AB testing. 
+I'm an Applied Research Scientist at the [Allen Institute for Artificial Intelligence (AI2)](http://allenai.org/) in Seattle.  I just started so nothing to show yet!
 
-I graduated in 2015 with an MS in Statistics from the [University of Washington](https://www.stat.washington.edu/). Before that, I spent some time as a research assistant at the [Institute of Mathematics - Academia Sinica](http://www.math.sinica.edu.tw/www/default_e.jsp) in Taipei.
+I graduated in 2015 with an MS in Statistics from the [University of Washington](https://www.stat.washington.edu/). Before that, I spent some time as a research assistant at the [Institute of Mathematics - Academia Sinica](http://www.math.sinica.edu.tw/www/default_e.jsp) in Taipei and a couple years as a statistician at [CDK Global](http://www.cdkglobal.com/).
 
 You can find examples of some of my work on [Github](https://github.com/kyleclo).
 
